@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('date_limite');
             $table->float('penalite');
             
-            // 🔗 Clé étrangère vers Contribuable
+            // Clé étrangère vers Contribuable
             $table->unsignedBigInteger('id_Contribuable');
             $table->foreign('id_Contribuable')
                   ->references('id_Contribuable')

@@ -17,15 +17,14 @@ return new class extends Migration
             $table->text('description');
             $table->date('date_ouverture')->nullable();
             $table->string('status')->default('En cours');
-            $table->string('id_Contribuable');
 
-            // 🔗 Clé étrangère vers contribuables
-            $table->string('id_Contribuable');
+            // Clé étrangère vers contribuables
+            $table->unsignedBigInteger('id_Contribuable');
             $table->foreign('id_Contribuable')
-                  ->references('id_Contribuable')
-                  ->on('contribuables')
-                  ->onDelete('cascade');
-                  
+                ->references('id_Contribuable')
+                ->on('contribuables')
+                ->onDelete('cascade');
+
             $table->timestamps();
         });
     }

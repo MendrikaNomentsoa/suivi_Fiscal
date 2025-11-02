@@ -27,10 +27,10 @@ return new class extends Migration
                   ->on('litiges')
                   ->onDelete('cascade');
 
-            // ✅ Clé primaire composite (empêche les doublons)
+            // Clé primaire composite (empêche les doublons)
             $table->primary(['id_Agent', 'id_Litige']);
 
-            // 🕒 Timestamps pour suivre quand la relation est créée ou mise à jour
+            // Timestamps pour suivre quand la relation est créée ou mise à jour
             $table->timestamps();
         });
     }

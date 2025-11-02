@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('message')->nullable();            // Message personnalisé
             $table->timestamps();
 
-            // 🔗 Clés étrangères
+            // Clés étrangères
             $table->foreign('id_notif')
                   ->references('id_notif')
                   ->on('notifications')
@@ -34,7 +34,7 @@ return new class extends Migration
                   ->on('contribuables')
                   ->onDelete('cascade');
 
-            // ✅ Clé primaire composite (évite les doublons)
+            // Clé primaire composite (évite les doublons)
             $table->primary(['id_notif', 'id_Agent', 'id_Contribuable']);
         });
     }
