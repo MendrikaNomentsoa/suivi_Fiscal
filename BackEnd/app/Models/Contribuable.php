@@ -15,7 +15,7 @@ class Contribuable extends Model
     protected $fillable = [
         'nom',
         'prenom',
-        'mail',
+        'email',
         'telephone',
         'password',
         'date_inscription',

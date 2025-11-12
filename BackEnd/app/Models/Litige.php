@@ -20,7 +20,7 @@ class Litige extends Model
     ];
 
     /**
-     * 🔗 Relation : un litige appartient à un contribuable
+     * Relation : un litige appartient à un contribuable
      */
     public function contribuable()
     {
@@ -28,7 +28,7 @@ class Litige extends Model
     }
 
     /**
-     * 🔗 Relation : un litige peut être traité par plusieurs agents
+     * Relation : un litige peut être traité par plusieurs agents
      * (relation N ↔ N via la table pivot 'traiter')
      */
     public function agents()

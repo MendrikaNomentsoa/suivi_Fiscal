@@ -10,11 +10,12 @@ class Categorie extends Model
     use HasFactory;
 
     protected $primaryKey = 'id_Type';
+    public $timestamps = false;
 
     protected $fillable = [
         'libelle',
-        'description',
-    ]; 
+        'design',
+    ];
 
     public function contribuables(){
         return $this->hasMany(Contribuable::class, 'id_Type');

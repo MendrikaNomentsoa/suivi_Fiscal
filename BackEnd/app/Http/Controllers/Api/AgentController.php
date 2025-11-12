@@ -3,108 +3,108 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Categorie;
+use App\Models\Agent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
-class CategorieController extends Controller
+class AgentController extends Controller
 {
     /**
-     * Afficher toutes les catégories
-     * Méthode GET /api/categories
+     * Lister tous les agents
+     * GET /api/agents
      */
     public function index()
     {
-        // Récupère toutes les catégories depuis la base
-        $categories = Categorie::all();
+        // Récupère tous les agents
+        $agents = Agent::all();
 
-        // Retourne un JSON
-        return response()->json($categories);
+        return response()->json($agents);
     }
 
     /**
-     * Ajouter une nouvelle catégorie
-     * Méthode POST /api/categories
+     * ➕ Créer un agent
+     * POST /api/agents
      */
     public function store(Request $request)
     {
-        // Validation des données envoyées par le client (frontend)
+        // Validation des données reçues
         $data = $request->validate([
-            'libelle' => 'required|string|max:150|unique:categories,libelle',
-            'description' => 'nullable|string',
+            'nom' => 'required|string|max:100',
+            'prenom' => 'required|string|max:100',
+            'mail' => 'required|email|unique:agents,mail',
+            'telephone' => 'nullable|string|max:20',
+            'role' => 'required|string|max:50',
+            'password' => 'required|string|min:6',
         ]);
 
-        // Création et enregistrement dans la base
-        $categorie = Categorie::create($data);
+        // Hachage du mot de passe avant enregistrement
+        $data['password'] = Hash::make($data['password']);
 
-        // Retourne un JSON + code HTTP 201 (créé avec succès)
-        return response()->json($categorie, 201);
+        $agent = Agent::create($data);
+
+        return response()->json($agent, 201);
     }
 
     /**
-     * Afficher une catégorie précise
-     * Méthode GET /api/categories/{id}
+     * Afficher un agent spécifique
+     * GET /api/agents/{id}
      */
-    public function show($id)
+    public function show($id_Agent)
     {
-        // Recherche d'une catégorie par son ID
-        $categorie = Categorie::find($id);
+        $agent = Agent::find($id_Agent);
 
-        // Si non trouvée → message d’erreur 404
-        if (!$categorie) {
-            return response()->json(['message' => 'Catégorie non trouvée'], 404);
+        if (!$agent) {
+            return response()->json(['message' => 'Agent non trouvé'], 404);
         }
 
-        // Sinon on la renvoie au format JSON
-        return response()->json($categorie);
+        return response()->json($agent);
     }
 
     /**
-     * ✏️ Modifier une catégorie existante
-     * Méthode PUT /api/categories/{id}
+     * Modifier un agent
+     * PUT /api/agents/{id}
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $id_Agent)
     {
-        $categorie = Categorie::find($id);
-        if (!$categorie) {
-            return response()->json(['message' => 'Catégorie non trouvée'], 404);
+        $agent = Agent::find($id_Agent);
+
+        if (!$agent) {
+            return response()->json(['message' => 'Agent non trouvé'], 404);
         }
 
-        // Validation des champs modifiés
         $data = $request->validate([
-            // "sometimes" → ne valide que si la clé existe dans la requête
-            'libelle' => 'sometimes|string|max:150|unique:categories,libelle,' . $id . ',id_Type',
-            'description' => 'nullable|string',
+            'nom' => 'sometimes|string|max:100',
+            'prenom' => 'sometimes|string|max:100',
+            'mail' => 'sometimes|email|unique:agents,mail,' . $id_Agent . ',id_Agent',
+            'telephone' => 'nullable|string|max:20',
+            'role' => 'sometimes|string|max:50',
+            'password' => 'nullable|string|min:6',
         ]);
 
-        // Mise à jour
-        $categorie->update($data);
+        // Si mot de passe envoyé → le hacher
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
 
-        // Retourne la catégorie modifiée
-        return response()->json($categorie);
+        $agent->update($data);
+
+        return response()->json($agent);
     }
 
     /**
-     * Supprimer une catégorie
-     * Méthode DELETE /api/categories/{id}
+     * Supprimer un agent
+     * DELETE /api/agents/{id}
      */
-    public function destroy($id)
+    public function destroy($id_Agent)
     {
-        $categorie = Categorie::find($id);
-        if (!$categorie) {
-            return response()->json(['message' => 'Catégorie non trouvée'], 404);
+        $agent = Agent::find($id_Agent);
+
+        if (!$agent) {
+            return response()->json(['message' => 'Agent non trouvé'], 404);
         }
 
-        // (Optionnel) Empêcher la suppression si la catégorie a des contribuables
-        if ($categorie->contribuables()->count() > 0) {
-            return response()->json([
-                'message' => 'Impossible de supprimer : des contribuables sont liés à cette catégorie'
-            ], 400);
-        }
+        $agent->delete();
 
-        // Suppression
-        $categorie->delete();
-
-        return response()->json(['message' => 'Catégorie supprimée avec succès']);
-
+        return response()->json(['message' => 'Agent supprimé avec succès']);
     }
 }

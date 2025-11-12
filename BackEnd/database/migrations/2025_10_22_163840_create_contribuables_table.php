@@ -15,19 +15,20 @@ return new class extends Migration
             $table->id('id_Contribuable');
             $table->string('nom');
             $table->string('prenom');
-            $table->string('mail')->unique();
-            $table->double('telphone')->nullable();
-            $table->string('passWord')->unique();
+            $table->string('email')->unique();
+            $table->string('telephone', 20)->nullable();
+            $table->string('password');
             $table->date('date_inscription');
             $table->unsignedBigInteger('id_Type');
             $table->foreign('id_Type')
-                  ->references('id_Type')
-                  ->on('categories')
-                  ->onDelete('cascade');
+                ->references('id_Type')
+                ->on('categories')
+                ->onDelete('cascade');
             $table->timestamps();
-        });
+});
 
-          
+
+
     }
 
     /**

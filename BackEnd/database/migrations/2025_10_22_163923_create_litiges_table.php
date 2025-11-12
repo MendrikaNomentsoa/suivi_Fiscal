@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('sujet');
             $table->text('description');
             $table->date('date_ouverture')->nullable();
-            $table->string('status')->default('En cours');
+            $table->string('statut')->default('en_attente');
 
             // Clé étrangère vers contribuables
             $table->unsignedBigInteger('id_Contribuable');
@@ -37,3 +37,4 @@ return new class extends Migration
         Schema::dropIfExists('litiges');
     }
 };
+
