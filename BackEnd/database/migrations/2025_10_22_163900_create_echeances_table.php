@@ -13,19 +13,24 @@ return new class extends Migration
     {
         Schema::create('echeances', function (Blueprint $table) {
             $table->id('id_Echeance');
-            $table->float('montant');
+
+            $table->float('montant');          // Salaire, montant IRSA ou base imposable
             $table->date('date_limite');
-            $table->float('penalite');
-            
+            $table->float('penalite')->default(0);
+
+            // ADDITIONS NECESSAIRES
+            $table->float('ca_annuel');        // Pour calcul IS
+            $table->float('irsa');             // Résultat du calcul IRSA
+            $table->float('is');               // Résultat du calcul IS
+
             // Clé étrangère vers Contribuable
             $table->unsignedBigInteger('id_Contribuable');
             $table->foreign('id_Contribuable')
-                  ->references('id_Contribuable')
-                  ->on('contribuables')
-                  ->onDelete('cascade');
+                ->references('id_Contribuable')
+                ->on('contribuables')
+                ->onDelete('cascade');
 
             $table->timestamps();
-            
         });
     }
 

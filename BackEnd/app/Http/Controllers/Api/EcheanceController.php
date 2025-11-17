@@ -10,43 +10,93 @@ class EcheanceController extends Controller
 {
     /**
      * Afficher toutes les échéances
-     * GET /api/echeances
      */
     public function index()
     {
-        // Récupère toutes les échéances avec le contribuable associé
         $echeances = Echeance::with('contribuable')->get();
-
         return response()->json($echeances);
     }
 
     /**
-     * Ajouter une nouvelle échéance
-     * POST /api/echeances
+     * Ajouter une nouvelle échéance (calcul IRSA + IS)
      */
     public function store(Request $request)
     {
-        // Validation des champs
         $data = $request->validate([
-            'montant' => 'required|numeric|min:0',
+            'montant' => 'required|numeric|min:0',           // salaire ou montant imposable
             'date_limite' => 'required|date',
-            'penalite' => 'nullable|numeric|min:0',
+            'ca_annuel' => 'required|numeric|min:0',        // CA pour calcul IS
             'id_Contribuable' => 'required|exists:contribuables,id_Contribuable',
         ]);
 
-        // Création de l’échéance
-        $echeance = Echeance::create($data);
+        /**
+         * ---------------------------
+         * 1) CALCUL IRSA
+         * ---------------------------
+         */
+        $montant = $data['montant'];
+        $irsa = $this->calculIRSA($montant);
 
-        return response()->json($echeance, 201);
+        /**
+         * ---------------------------
+         * 2) CALCUL IS (IMPOT SYNTÉTIQUE)
+         * ---------------------------
+         */
+        $ca = $data['ca_annuel'];
+
+        if ($ca > 400000000) {
+            return response()->json([
+                'message' => 'Le contribuable dépasse le plafond de l’impôt synthétique (20 000 000 Ar).'
+            ], 422);
+        }
+
+        // IS = 5% du chiffre d’affaires
+        $is = $ca * 0.05;
+
+        /**
+         * ---------------------------
+         * 3) Enregistrer l’échéance
+         * ---------------------------
+         */
+        $echeance = Echeance::create([
+            'montant' => $montant,
+            'date_limite' => $data['date_limite'],
+            'penalite' => 0,
+            'id_Contribuable' => $data['id_Contribuable'],
+            'irsa' => $irsa,
+            'is' => $is
+        ]);
+
+        return response()->json([
+            'message' => 'Échéance créée avec calcul IRSA + IS.',
+            'data' => $echeance
+        ], 201);
     }
 
     /**
-     * Afficher une échéance spécifique
-     * GET /api/echeances/{id}
+     * Fonction interne : Calcul IRSA Madagascar
      */
-    public function show($id_Echeance)
+    private function calculIRSA($salaire)
     {
-        $echeance = Echeance::with('contribuable')->find($id_Echeance);
+        if ($salaire <= 350000) return 0;
+
+        if ($salaire <= 400000) return max(($salaire - 350000) * 0.05, 2500);
+
+        if ($salaire <= 500000) return max(($salaire - 400000) * 0.10, 10000);
+
+        if ($salaire <= 600000) return max(($salaire - 500000) * 0.15, 15000);
+
+        if ($salaire > 600000) return max(($salaire - 600000) * 0.20, 20000);
+
+        return 0;
+    }
+
+    /**
+     * Afficher une échéance
+     */
+    public function show($id)
+    {
+        $echeance = Echeance::with('contribuable')->find($id);
 
         if (!$echeance) {
             return response()->json(['message' => 'Échéance non trouvée'], 404);
@@ -57,11 +107,10 @@ class EcheanceController extends Controller
 
     /**
      * Modifier une échéance
-     * PUT /api/echeances/{id}
      */
-    public function update(Request $request, $id_Echeance)
+    public function update(Request $request, $id)
     {
-        $echeance = Echeance::find($id_Echeance);
+        $echeance = Echeance::find($id);
 
         if (!$echeance) {
             return response()->json(['message' => 'Échéance non trouvée'], 404);
@@ -70,9 +119,24 @@ class EcheanceController extends Controller
         $data = $request->validate([
             'montant' => 'sometimes|numeric|min:0',
             'date_limite' => 'sometimes|date',
-            'penalite' => 'nullable|numeric|min:0',
-            'id_Contribuable' => 'sometimes|exists:contribuables,id_Contribuable',
+            'ca_annuel' => 'sometimes|numeric|min:0',
         ]);
+
+        // recalcul si montant changé
+        if (isset($data['montant'])) {
+            $data['irsa'] = $this->calculIRSA($data['montant']);
+        }
+
+        // recalcul si CA changé
+        if (isset($data['ca_annuel'])) {
+            if ($data['ca_annuel'] > 400000000) {
+                return response()->json([
+                    'message' => 'Le contribuable dépasse le plafond de l’impôt synthétique.'
+                ], 422);
+            }
+
+            $data['is'] = $data['ca_annuel'] * 0.05;
+        }
 
         $echeance->update($data);
 
@@ -81,18 +145,16 @@ class EcheanceController extends Controller
 
     /**
      * Supprimer une échéance
-     * DELETE /api/echeances/{id}
      */
-    public function destroy($id_Echeance)
+    public function destroy($id)
     {
-        $echeance = Echeance::find($id_Echeance);
+        $echeance = Echeance::find($id);
 
         if (!$echeance) {
             return response()->json(['message' => 'Échéance non trouvée'], 404);
         }
 
         $echeance->delete();
-
         return response()->json(['message' => 'Échéance supprimée avec succès']);
     }
 }
