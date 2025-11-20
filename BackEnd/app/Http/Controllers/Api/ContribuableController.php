@@ -10,50 +10,47 @@ use Illuminate\Support\Facades\Hash;
 class ContribuableController extends Controller
 {
     /**
-     *  Lister tous les contribuables
-     * Méthode GET /api/contribuables
+     * Lister tous les contribuables
+     * GET /api/contribuables
      */
     public function index()
     {
-        // On récupère tous les contribuables avec leur catégorie associée
-        $contribuables = Contribuable::with('categorie')->get();
+        // Pas de relation categorie
+        $contribuables = Contribuable::all();
 
         return response()->json($contribuables);
     }
 
     /**
      * Créer un nouveau contribuable
-     * Méthode POST /api/contribuables
+     * POST /api/contribuables
      */
     public function store(Request $request)
     {
-        // Validation des données reçues
         $data = $request->validate([
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
-            'email' => 'required|email|unique:contribuables,email',
+            'email' => 'required|email|unique:contribuable,email',
             'telephone' => 'nullable|string|max:20',
             'password' => 'required|string|min:6',
             'date_inscription' => 'required|date',
-            'id_Type' => 'required|exists:categories,id_Type', // clé étrangère
         ]);
 
-        // Hachage du mot de passe avant stockage
+        // Hash mot de passe
         $data['password'] = Hash::make($data['password']);
 
-        // Création du contribuable
         $contribuable = Contribuable::create($data);
 
         return response()->json($contribuable, 201);
     }
 
     /**
-     * Afficher un contribuable spécifique
-     * Méthode GET /api/contribuables/{id}
+     * Afficher un contribuable
+     * GET /api/contribuables/{id}
      */
-    public function show($id_Contribuable)
+    public function show($id_contribuable)
     {
-        $contribuable = Contribuable::with('categorie')->find($id_Contribuable);
+        $contribuable = Contribuable::find($id_contribuable);
 
         if (!$contribuable) {
             return response()->json(['message' => 'Contribuable non trouvé'], 404);
@@ -64,11 +61,11 @@ class ContribuableController extends Controller
 
     /**
      * Modifier un contribuable
-     * Méthode PUT /api/contribuables/{id}
+     * PUT /api/contribuables/{id}
      */
-    public function update(Request $request, $id_Contribuable)
+    public function update(Request $request, $id_contribuable)
     {
-        $contribuable = Contribuable::find($id_Contribuable);
+        $contribuable = Contribuable::find($id_contribuable);
 
         if (!$contribuable) {
             return response()->json(['message' => 'Contribuable non trouvé'], 404);
@@ -77,13 +74,12 @@ class ContribuableController extends Controller
         $data = $request->validate([
             'nom' => 'sometimes|string|max:100',
             'prenom' => 'sometimes|string|max:100',
-            'email' => 'sometimes|email|unique:contribuables,email,' . $id_Contribuable . ',id_Contribuable',
+            'email' => 'sometimes|email|unique:contribuable,email,' . $id_contribuable . ',id_contribuable',
             'telephone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
-            'id_Type' => 'sometimes|exists:categories,id_Type',
+            'date_inscription' => 'sometimes|date',
         ]);
 
-        // Si mot de passe envoyé → le hacher
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         }
@@ -95,11 +91,11 @@ class ContribuableController extends Controller
 
     /**
      * Supprimer un contribuable
-     * Méthode DELETE /api/contribuables/{id}
+     * DELETE /api/contribuables/{id}
      */
-    public function destroy($id_Contribuable)
+    public function destroy($id_contribuable)
     {
-        $contribuable = Contribuable::find($id_Contribuable);
+        $contribuable = Contribuable::find($id_contribuable);
 
         if (!$contribuable) {
             return response()->json(['message' => 'Contribuable non trouvé'], 404);

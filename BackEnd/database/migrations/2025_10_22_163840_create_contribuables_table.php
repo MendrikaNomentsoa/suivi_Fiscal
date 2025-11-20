@@ -12,23 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('contribuables', function (Blueprint $table) {
-            $table->id('id_Contribuable');
+            $table->id('id_contribuable');
             $table->string('nom');
             $table->string('prenom');
             $table->string('email')->unique();
             $table->string('telephone', 20)->nullable();
-            $table->string('password');
-            $table->date('date_inscription');
-            $table->unsignedBigInteger('id_Type');
-            $table->foreign('id_Type')
-                ->references('id_Type')
-                ->on('categories')
-                ->onDelete('cascade');
+            $table->string('mot_de_passe');  // cohérent avec ton modèle
+            $table->date('date_inscription')->nullable();
             $table->timestamps();
-});
-
-
-
+        });
     }
 
     /**

@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
-            $table->id('id_Type');
-            $table->string('libelle');
-            $table->string('design');
+        Schema::create('type_impots', function (Blueprint $table) {
+            $table->id('id_type_impot'); // clé primaire BIGINT UNSIGNED
+            $table->string('nom'); // nom de l'impôt
+            $table->string('periodicite'); // mensuelle / annuelle
+            $table->timestamps();
         });
     }
 
@@ -23,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('type_impots');
     }
 };

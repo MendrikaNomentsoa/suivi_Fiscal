@@ -5,40 +5,52 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-
 class Contribuable extends Model
 {
-
     use HasFactory;
 
-    protected $primaryKey = 'id_Contribuable';
+    // Nom de la clé primaire
+    protected $primaryKey = 'id_contribuable';
+
+    protected $table = 'contribuables';
+
+    // Colonnes modifiables
     protected $fillable = [
         'nom',
         'prenom',
         'email',
         'telephone',
-        'password',
+        'mot_de_passe',
         'date_inscription',
-        'id_Type'
     ];
 
-    public function categories(){
-        return $this->belongsTo(Categorie::class, 'id_Type');
+    /*********************
+     *   RELATIONS
+     *********************/
+
+    // Un contribuable a plusieurs déclarations
+    public function declarations()
+    {
+        return $this->hasMany(Declaration::class, 'contribuable_id');
     }
 
-    public function echeances(){
-        return $this->hasMany(Echeance::class, 'id_Contribuable');
+    // Un contribuable peut avoir plusieurs échéances (si tu les lies au contribuable)
+    public function echeances()
+    {
+        return $this->hasMany(Echeance::class, 'id_contribuable');
     }
 
-    public function litiges(){
-        return $this->hasMany(Litige::class, 'id_Contribuable');
+    // Un contribuable peut avoir plusieurs litiges
+    public function litiges()
+    {
+        return $this->hasMany(Litige::class, 'id_contribuable');
     }
 
-    public function notifications(){
-        return $this->belongsToMany(Notification::class,'notifier', 'id_Contribuable', 'id_notif' )
+    // Notifications via la table pivot NOTIFIER
+    public function notifications()
+    {
+        return $this->belongsToMany(Notification::class, 'notifier', 'id_contribuable', 'id_notif')
                     ->withPivot('message')
                     ->withTimestamps();
     }
-
-
 }
