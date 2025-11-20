@@ -30,7 +30,7 @@ class ContribuableController extends Controller
         $data = $request->validate([
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
-            'email' => 'required|email|unique:contribuable,email',
+            'email' => 'required|email|unique:contribuables,email',
             'telephone' => 'nullable|string|max:20',
             'password' => 'required|string|min:6',
             'date_inscription' => 'required|date',
@@ -74,7 +74,7 @@ class ContribuableController extends Controller
         $data = $request->validate([
             'nom' => 'sometimes|string|max:100',
             'prenom' => 'sometimes|string|max:100',
-            'email' => 'sometimes|email|unique:contribuable,email,' . $id_contribuable . ',id_contribuable',
+            'email' => 'sometimes|email|unique:contribuables,email,' . $id_contribuable . ',id_contribuable',
             'telephone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
             'date_inscription' => 'sometimes|date',

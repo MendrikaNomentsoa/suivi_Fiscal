@@ -20,8 +20,8 @@ class Contribuable extends Model
         'prenom',
         'email',
         'telephone',
-        'mot_de_passe',
-        'date_inscription',
+        'password',
+        'date_inscription'
     ];
 
     /*********************

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('prenom');
             $table->string('email')->unique();
             $table->string('telephone', 20)->nullable();
-            $table->string('mot_de_passe');  // cohérent avec ton modèle
+            $table->string('password');  // cohérent avec ton modèle
             $table->date('date_inscription')->nullable();
             $table->timestamps();
         });
