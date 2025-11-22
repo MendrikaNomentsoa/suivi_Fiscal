@@ -15,9 +15,7 @@ class ContribuableController extends Controller
      */
     public function index()
     {
-        // Pas de relation categorie
         $contribuables = Contribuable::all();
-
         return response()->json($contribuables);
     }
 
@@ -30,13 +28,13 @@ class ContribuableController extends Controller
         $data = $request->validate([
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
-            'email' => 'required|email|unique:contribuables,email',
+            'nif' => 'required|string|unique:contribuables,nif',
+            'email' => 'nullable|email|unique:contribuables,email',
             'telephone' => 'nullable|string|max:20',
             'password' => 'required|string|min:6',
             'date_inscription' => 'required|date',
         ]);
 
-        // Hash mot de passe
         $data['password'] = Hash::make($data['password']);
 
         $contribuable = Contribuable::create($data);
@@ -45,12 +43,27 @@ class ContribuableController extends Controller
     }
 
     /**
-     * Afficher un contribuable
+     * Afficher un contribuable par ID
      * GET /api/contribuables/{id}
      */
     public function show($id_contribuable)
     {
         $contribuable = Contribuable::find($id_contribuable);
+
+        if (!$contribuable) {
+            return response()->json(['message' => 'Contribuable non trouvé'], 404);
+        }
+
+        return response()->json($contribuable);
+    }
+
+    /**
+     * Afficher un contribuable par NIF
+     * GET /api/contribuables/nif/{nif}
+     */
+    public function showByNif($nif)
+    {
+        $contribuable = Contribuable::where('nif', $nif)->first();
 
         if (!$contribuable) {
             return response()->json(['message' => 'Contribuable non trouvé'], 404);
@@ -74,6 +87,7 @@ class ContribuableController extends Controller
         $data = $request->validate([
             'nom' => 'sometimes|string|max:100',
             'prenom' => 'sometimes|string|max:100',
+            'nif' => 'sometimes|string|unique:contribuables,nif,' . $id_contribuable . ',id_contribuable',
             'email' => 'sometimes|email|unique:contribuables,email,' . $id_contribuable . ',id_contribuable',
             'telephone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',

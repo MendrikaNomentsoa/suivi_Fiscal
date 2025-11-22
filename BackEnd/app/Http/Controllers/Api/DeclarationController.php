@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Declaration;
-use Illuminate\Http\Request;
 use App\Models\Echeance;
+use App\Models\TypeImpot;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
-
 
 class DeclarationController extends Controller
 {
@@ -17,9 +17,7 @@ class DeclarationController extends Controller
      */
     public function index()
     {
-        // ATTENTION : les relations s'appellent typeImpot() et contribuable()
         $declarations = Declaration::with(['typeImpot', 'contribuable'])->get();
-
         return response()->json($declarations);
     }
 
@@ -27,7 +25,6 @@ class DeclarationController extends Controller
      * Ajouter une déclaration
      * POST /api/declarations
      */
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -38,29 +35,26 @@ class DeclarationController extends Controller
             'statut' => 'required|in:brouillon,validee'
         ]);
 
-        // 1️⃣ Création déclaration
+        // Création de la déclaration
         $declaration = Declaration::create($validated);
 
-        // 2️⃣ Détermination de la date limite selon le type d'impôt
-        $type = $validated['id_type_impot'];
+        // Détermination de la date limite selon le type d'impôt
         $date = Carbon::now();
+        $type = $validated['id_type_impot'];
 
         if ($type == 1) { // IRSA
-            $date_limite = $date->clone()->addMonth()->day(15);
-        }
-        elseif ($type == 2) { // IS
-            $exercice = $date->format('Y');
-            $date_limite = Carbon::create($exercice + 1, 5, 15);
-        }
-        else {
-            $date_limite = $date->clone()->addMonth()->day(15); // valeur par défaut
+            $date_limite = $date->copy()->addMonth()->day(15);
+        } elseif ($type == 2) { // IS
+            $date_limite = Carbon::create($date->year + 1, 5, 15);
+        } else {
+            $date_limite = $date->copy()->addMonth()->day(15); // défaut
         }
 
-        // 3️⃣ Création automatique de l’échéance
+        // Création automatique de l’échéance
         $echeance = Echeance::create([
             'id_contribuable' => $validated['id_contribuable'],
-            'id_type_impot' => $validated['id_type_impot'],
             'id_declaration' => $declaration->id,
+            'id_type_impot' => $validated['id_type_impot'],
             'montant_du' => $validated['montant'],
             'penalite' => 0,
             'interet' => 0,
@@ -68,7 +62,7 @@ class DeclarationController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Déclaration + échéance créées',
+            'message' => 'Déclaration et échéance créées avec succès',
             'declaration' => $declaration,
             'echeance' => $echeance
         ], 201);
@@ -80,8 +74,7 @@ class DeclarationController extends Controller
      */
     public function show($id)
     {
-        $declaration = Declaration::with(['typeImpot', 'contribuable'])
-                                  ->find($id);
+        $declaration = Declaration::with(['typeImpot', 'contribuable'])->find($id);
 
         if (!$declaration) {
             return response()->json(['message' => 'Déclaration introuvable'], 404);
@@ -102,6 +95,13 @@ class DeclarationController extends Controller
             return response()->json(['message' => 'Déclaration introuvable'], 404);
         }
 
+        // Interdire modification si validée
+        if ($declaration->statut === 'validee') {
+            return response()->json([
+                'message' => 'Cette déclaration est validée et ne peut plus être modifiée.'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'id_type_impot' => 'sometimes|exists:type_impots,id_type_impot',
             'id_contribuable' => 'sometimes|exists:contribuables,id_contribuable',
@@ -114,7 +114,7 @@ class DeclarationController extends Controller
 
         return response()->json([
             'message' => 'Déclaration mise à jour avec succès',
-            'data' => $declaration
+            'declaration' => $declaration
         ]);
     }
 
@@ -130,8 +130,41 @@ class DeclarationController extends Controller
             return response()->json(['message' => 'Déclaration introuvable'], 404);
         }
 
+        // Interdire suppression si validée
+        if ($declaration->statut === 'validee') {
+            return response()->json([
+                'message' => 'Une déclaration validée ne peut pas être supprimée.'
+            ], 403);
+        }
+
         $declaration->delete();
 
         return response()->json(['message' => 'Déclaration supprimée avec succès']);
     }
+
+    /**
+     * Liste des impôts avec statut "fait / non fait" pour un contribuable
+     */
+    public function impotsByContribuable($id_contribuable)
+    {
+        $contribuable = \App\Models\Contribuable::with('typeImpots')->find($id_contribuable);
+
+        if (!$contribuable) {
+            return response()->json(['message' => 'Contribuable introuvable'], 404);
+        }
+
+        $declarations = Declaration::where('id_contribuable', $id_contribuable)->get();
+
+        $result = $contribuable->typeImpots->map(function($impot) use ($declarations) {
+            $fait = $declarations->where('id_type_impot', $impot->id_type_impot)->isNotEmpty();
+            return [
+                'id_type_impot' => $impot->id_type_impot,
+                'nom' => $impot->nom,
+                'fait' => $fait
+            ];
+        });
+
+        return response()->json($result);
+    }
+
 }

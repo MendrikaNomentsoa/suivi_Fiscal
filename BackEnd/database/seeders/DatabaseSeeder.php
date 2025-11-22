@@ -16,7 +16,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-        TypeImpotSeeder::class,
+            ContribuableSeeder::class,
+            TypeImpotSeeder::class,
+            ContribuableTypeImpotSeeder::class,
+
     ]);
     }
 }

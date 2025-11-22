@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable; // si tu veux utiliser l'authentification
 
 class Contribuable extends Model
 {
@@ -16,6 +17,7 @@ class Contribuable extends Model
 
     // Colonnes modifiables
     protected $fillable = [
+        'nif',               // <- ajouté pour ton workflow
         'nom',
         'prenom',
         'email',
@@ -24,17 +26,30 @@ class Contribuable extends Model
         'date_inscription'
     ];
 
+    // Si tu veux cacher certains champs dans les réponses JSON
+    protected $hidden = [
+        'password',
+    ];
+
     /*********************
      *   RELATIONS
      *********************/
 
+    // App\Models\Contribuable.php
+    public function typeImpots()
+    {
+        return $this->belongsToMany(TypeImpot::class, 'contribuable_type_impot', 'id_contribuable', 'id_type_impot')
+                    ->withTimestamps();
+    }
+
+
     // Un contribuable a plusieurs déclarations
     public function declarations()
     {
-        return $this->hasMany(Declaration::class, 'contribuable_id');
+        return $this->hasMany(Declaration::class, 'id_contribuable');
     }
 
-    // Un contribuable peut avoir plusieurs échéances (si tu les lies au contribuable)
+    // Un contribuable peut avoir plusieurs échéances
     public function echeances()
     {
         return $this->hasMany(Echeance::class, 'id_contribuable');
@@ -49,8 +64,12 @@ class Contribuable extends Model
     // Notifications via la table pivot NOTIFIER
     public function notifications()
     {
-        return $this->belongsToMany(Notification::class, 'notifier', 'id_contribuable', 'id_notif')
-                    ->withPivot('message')
-                    ->withTimestamps();
+        return $this->belongsToMany(
+            Notification::class,
+            'notifier',
+            'id_contribuable',
+            'id_notif'
+        )->withPivot('message')
+         ->withTimestamps();
     }
 }

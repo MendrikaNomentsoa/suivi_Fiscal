@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('contribuables', function (Blueprint $table) {
             $table->id('id_contribuable');
+            $table->string('nif')->unique();               // <- ajout du NIF
             $table->string('nom');
             $table->string('prenom');
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
             $table->string('telephone', 20)->nullable();
-            $table->string('password');  // cohérent avec ton modèle
+            $table->string('password');                     // mot de passe hashé
             $table->date('date_inscription')->nullable();
             $table->timestamps();
         });

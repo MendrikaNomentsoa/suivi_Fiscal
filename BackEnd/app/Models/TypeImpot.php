@@ -27,4 +27,12 @@ class TypeImpot extends Model
     {
         return $this->hasMany(Declaration::class, 'id_type_impot', 'id_type_impot');
     }
+
+    // App\Models\TypeImpot.php
+    public function contribuables()
+    {
+        return $this->belongsToMany(Contribuable::class, 'contribuable_type_impot', 'id_type_impot', 'id_contribuable')
+                    ->withTimestamps();
+    }
+
 }
