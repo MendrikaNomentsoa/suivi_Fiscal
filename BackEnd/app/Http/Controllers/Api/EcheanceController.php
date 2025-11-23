@@ -66,29 +66,25 @@ class EcheanceController extends Controller
      * Calcul pénalité + intérêt selon DGI Madagascar
      */
     private function recalculPenaliteInteret(Echeance $echeance)
-    {
-        $now = Carbon::now();
+        {
+            $now = Carbon::now();
 
-        if ($now->lt($echeance->date_limite)) {
-            return; // pas de retard
+            if ($now->lt($echeance->date_limite)) {
+                return; // pas de retard
+            }
+
+            $mois_retard = $now->diffInMonths($echeance->date_limite);
+
+            // Appliquer la pénalité seulement si elle n'a pas encore été appliquée
+            if ($echeance->penalite == 0) {
+                $echeance->penalite = $echeance->id_type_impot == 1 ? 100000 : 20000;
+            }
+
+            // Calcul intérêt cumulé
+            $echeance->interet = ($echeance->montant_du * 0.01) * $mois_retard;
+
+            $echeance->save();
         }
-
-        $mois_retard = $now->diffInMonths($echeance->date_limite);
-
-        // pénalités selon impôt
-        if ($echeance->id_type_impot == 1) { // IRSA
-            $penalite = 100000;
-        } else { // IS / TVA / IR
-            $penalite = 20000;
-        }
-
-        $interet = ($echeance->montant_du * 0.01) * $mois_retard;
-
-        $echeance->update([
-            'penalite' => $penalite,
-            'interet' => $interet
-        ]);
-    }
 
     /**
      * Supprimer une échéance

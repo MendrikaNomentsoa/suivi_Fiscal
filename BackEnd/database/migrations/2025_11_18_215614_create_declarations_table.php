@@ -12,19 +12,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('declarations', function (Blueprint $table) {
-            $table->id('id_declaration'); // id primaire
+            $table->id('id_declaration'); // clé primaire
 
             // Clé étrangère vers type_impots
-            $table->foreignId('id_type_impot')
-                  ->constrained('type_impots', 'id_type_impot') // nom exact de la table et de la colonne
+            $table->unsignedBigInteger('id_type_impot');
+            $table->foreign('id_type_impot')
+                  ->references('id_type_impot')
+                  ->on('type_impots')
                   ->onDelete('cascade');
 
             // Clé étrangère vers contribuables
-            $table->foreignId('id_contribuable')
-                  ->constrained('contribuables', 'id_contribuable') // nom exact de la table et colonne
+            $table->unsignedBigInteger('id_contribuable');
+            $table->foreign('id_contribuable')
+                  ->references('id_contribuable')
+                  ->on('contribuables')
                   ->onDelete('cascade');
 
-            // Autres colonnes spécifiques à la déclaration
+            // Autres colonnes
             $table->decimal('montant', 15, 2)->nullable(); // montant déclaré
             $table->date('date_declaration')->nullable();
             $table->string('statut')->default('en attente'); // en attente / validée / rejetée

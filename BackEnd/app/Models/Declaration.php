@@ -22,6 +22,10 @@ class Declaration extends Model
         'statut'
     ];
 
+    // Définir le type de clé primaire comme integer (optionnel si auto-increment)
+    protected $keyType = 'int';
+    public $incrementing = true;
+
     /**
      * Relation vers le type d'impôt
      */

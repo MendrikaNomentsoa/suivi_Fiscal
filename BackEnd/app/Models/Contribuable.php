@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable; // si tu veux utiliser l'authentification
+use Laravel\Sanctum\HasApiTokens;
 
 class Contribuable extends Model
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory;
 
     // Nom de la clé primaire
     protected $primaryKey = 'id_contribuable';

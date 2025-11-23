@@ -10,12 +10,17 @@ return new class extends Migration
     {
         Schema::create('contribuable_type_impot', function (Blueprint $table) {
             $table->id();
+
+            // Clés étrangères
             $table->unsignedBigInteger('id_contribuable');
             $table->unsignedBigInteger('id_type_impot');
+
             $table->timestamps();
 
+            // Contrainte d'unicité pour éviter les doublons
             $table->unique(['id_contribuable', 'id_type_impot']);
 
+            // Définition des relations
             $table->foreign('id_contribuable')
                   ->references('id_contribuable')
                   ->on('contribuables')

@@ -11,6 +11,10 @@
       </li>
     </ul>
   </div>
+  <button @click="$router.push(`/litige/${idContribuable}`)">
+  Déposer un litige
+</button>
+
 </template>
 
 <script>

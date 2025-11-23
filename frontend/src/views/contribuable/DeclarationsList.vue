@@ -23,49 +23,45 @@
       Aucune déclaration pour cet impôt.
     </div>
   </div>
+
+  <button @click="$router.push({ name: 'SimulationMontant', params: { idContribuable: 1 } })">
+  Simuler le montant
+</button>
+
 </template>
 
+
+
 <script>
-import axios from 'axios'
+import axios from "axios";
 
 export default {
-  props: ['idContribuable', 'idTypeImpot'],
+  props: ["idContribuable", "idTypeImpot"],
   data() {
     return {
       declarations: []
-    }
+    };
   },
   mounted() {
-    this.loadDeclarations()
+    this.loadDeclarations();
   },
   methods: {
     async loadDeclarations() {
       try {
-        const res = await axios.get(`http://127.0.0.1:8000/api/declarations`)
-        // Filtrer pour ce contribuable et ce type d'impôt
-        this.declarations = res.data.filter(d => d.id_contribuable == this.idContribuable && d.id_type_impot == this.idTypeImpot)
-      } catch (error) {
-        console.error(error)
+        const res = await axios.get("http://127.0.0.1:8000/api/declarations");
+        this.declarations = res.data.filter(
+          d => d.id_contribuable == this.idContribuable && d.id_type_impot == this.idTypeImpot
+        );
+      } catch (err) {
+        console.error(err);
       }
     }
   }
-}
+};
 </script>
 
 <style>
-.container {
-  max-width: 600px;
-  margin: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-}
+.container { max-width: 600px; margin: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #ddd; padding: 8px; }
 </style>
