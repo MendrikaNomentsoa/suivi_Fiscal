@@ -27,9 +27,10 @@ class ContribuableSeeder extends Seeder
                 'prenom' => 'Lala',
                 'email' => 'lala.andrianarisoa@example.com',
                 'telephone' => '0337654321',
-                'password' => Hash::make('secret123'),
+                'password' => Hash::make('secret321'),
                 'date_inscription' => now(),
             ],
+
         ];
 
         foreach ($contribuables as $c) {

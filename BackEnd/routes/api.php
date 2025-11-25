@@ -19,15 +19,43 @@ Route::get('/contribuables/nif/{nif}', [ContribuableController::class, 'showByNi
 Route::get('/contribuables/{id}/impots', [DeclarationController::class, 'impotsByContribuable']);
 Route::get('/impots/{id_contribuable}', [DeclarationController::class, 'impotsByContribuable']);
 
-// ---------------------- Déclarations ----------------------
+// ========== ROUTES TYPES D'IMPÔTS ==========
+Route::get('/types-impots', [TypeImpotController::class, 'index']);
+Route::get('/types-impots/{id}', [TypeImpotController::class, 'show']);
+Route::post('/types-impots', [TypeImpotController::class, 'store']);
+Route::put('/types-impots/{id}', [TypeImpotController::class, 'update']);
+Route::delete('/types-impots/{id}', [TypeImpotController::class, 'destroy']);
+
+// ========== ROUTES DÉCLARATIONS ==========
 Route::get('/declarations', [DeclarationController::class, 'index']);
 Route::post('/declarations', [DeclarationController::class, 'store']);
 Route::get('/declarations/{id}', [DeclarationController::class, 'show']);
 Route::put('/declarations/{id}', [DeclarationController::class, 'update']);
 Route::delete('/declarations/{id}', [DeclarationController::class, 'destroy']);
 
+// Routes spécifiques déclarations
+Route::get('/declarations/stats/{idContribuable}', [DeclarationController::class, 'statistiques']);
+
+// ========== ROUTES CONTRIBUABLES ==========
+Route::get('/impots/{idContribuable}', [DeclarationController::class, 'impotsByContribuable']);
+
 // ---------------------- Échéances ----------------------
-Route::apiResource('echeances', EcheanceController::class);
+// Routes Échéances
+Route::prefix('echeances')->group(function () {
+    Route::get('/', [EcheanceController::class, 'index']);
+    Route::get('/{id}', [EcheanceController::class, 'show']);
+    Route::put('/{id}', [EcheanceController::class, 'update']);
+    Route::delete('/{id}', [EcheanceController::class, 'destroy']);
+
+    // Paiements
+    Route::post('/{id}/paiement', [EcheanceController::class, 'enregistrerPaiement']);
+    Route::post('/{id}/appliquer-penalites', [EcheanceController::class, 'appliquerPenalites']);
+
+    // Filtres et statistiques
+    Route::get('/contribuable/{id_contribuable}', [EcheanceController::class, 'parContribuable']);
+    Route::get('/retards/liste', [EcheanceController::class, 'echeancesEnRetard']);
+    Route::get('/statistiques/general', [EcheanceController::class, 'statistiques']);
+});
 
 // ---------------------- Agents ----------------------
 Route::apiResource('agents', AgentController::class);

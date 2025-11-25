@@ -51,7 +51,7 @@
             <svg class="w-5 h-5 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span class="group-hover:text-slate-900">Échéances</span>
+            <span class="group-hover:text-slate-900">Notification</span>
           </button>
         </nav>
       </div>
@@ -191,8 +191,8 @@
                     <span 
                       :class="[
                         'px-3 py-1 rounded-full text-xs font-semibold',
-                        declaration.statut === 'validee' ? 'bg-green-100 text-green-700' : 
-                        declaration.statut === 'brouillon' ? 'bg-yellow-100 text-yellow-700' : 
+                        declaration.statut === 'non valide' ? 'bg-red-100 text-red-700' : 
+                        declaration.statut === 'valider' ? 'bg-green-100 text-green-700' : 
                         'bg-blue-100 text-blue-700'
                       ]"
                     >
@@ -314,7 +314,7 @@ export default {
           .slice(0, 5)
 
         stats.value.declarationsEnCours = mesDeclarations.filter(
-          d => d.statut === 'brouillon'
+          d => d.statut === 'valider'
         ).length
         stats.value.declarationsValidees = mesDeclarations.filter(
           d => d.statut === 'validee'
@@ -389,7 +389,7 @@ export default {
 
     const getStatutLabel = (statut) => {
       const labels = {
-        'brouillon': 'Brouillon',
+        'valider': 'valider',
         'validee': 'Validée',
         'en_attente': 'En attente'
       }

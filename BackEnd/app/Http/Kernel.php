@@ -8,13 +8,10 @@ class Kernel extends HttpKernel
 {
     /**
      * Global HTTP middleware stack.
-     *
-     * Ces middleware sont exécutés pour **toutes les requêtes**.
      */
     protected $middleware = [
-        // Laravel default middleware
         \App\Http\Middleware\TrustProxies::class,
-        \Fruitcake\Cors\HandleCors::class,
+        \Illuminate\Http\Middleware\HandleCors::class, // ✅ CORRECT POUR LARAVEL 10+
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
@@ -22,7 +19,7 @@ class Kernel extends HttpKernel
     ];
 
     /**
-     * Middleware de groupe.
+     * Middleware groups.
      */
     protected $middlewareGroups = [
         'web' => [
@@ -42,13 +39,11 @@ class Kernel extends HttpKernel
 
     /**
      * Route middleware.
-     *
-     * Middleware que tu peux assigner individuellement à des routes.
      */
     protected $routeMiddleware = [
-        'auth' => \App\Http\Middleware\Authenticate::class, // Auth général
-        'auth.contribuable' => \App\Http\Middleware\ContribuableAuth::class, // Auth contribuable
-        'auth.agent' => \App\Http\Middleware\AgentAuth::class, // Auth agent
+        'auth' => \App\Http\Middleware\Authenticate::class,
+        'auth.contribuable' => \App\Http\Middleware\ContribuableAuth::class,
+        'auth.agent' => \App\Http\Middleware\AgentAuth::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,

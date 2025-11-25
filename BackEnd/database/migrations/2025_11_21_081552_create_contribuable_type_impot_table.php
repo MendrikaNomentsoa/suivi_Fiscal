@@ -6,33 +6,38 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('contribuable_type_impot', function (Blueprint $table) {
-            $table->id();
+            $table->id(); // clé primaire auto-incrémentée
 
-            // Clés étrangères
+            // Clé étrangère vers contribuables
             $table->unsignedBigInteger('id_contribuable');
+            $table->foreign('id_contribuable')
+                ->references('id_contribuable')
+                ->on('contribuables')
+                ->onDelete('cascade');
+
+            // Clé étrangère vers type_impots
             $table->unsignedBigInteger('id_type_impot');
+            $table->foreign('id_type_impot')
+                ->references('id_type_impot')
+                ->on('type_impots')
+                ->onDelete('cascade');
 
             $table->timestamps();
 
-            // Contrainte d'unicité pour éviter les doublons
+            // ✅ Empêcher les doublons (un contribuable ne peut pas être lié deux fois au même type d'impôt)
             $table->unique(['id_contribuable', 'id_type_impot']);
-
-            // Définition des relations
-            $table->foreign('id_contribuable')
-                  ->references('id_contribuable')
-                  ->on('contribuables')
-                  ->onDelete('cascade');
-
-            $table->foreign('id_type_impot')
-                  ->references('id_type_impot')
-                  ->on('type_impots')
-                  ->onDelete('cascade');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('contribuable_type_impot');
