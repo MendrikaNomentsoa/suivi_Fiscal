@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import http from "../api/http";
+import http from "../../api/http";
 
 export default {
   data() {

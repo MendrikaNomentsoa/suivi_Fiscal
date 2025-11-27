@@ -12,6 +12,8 @@ import ListeImpots from '@/views/contribuable/ImpotsList.vue'
 import DeclarationsExistantes from '@/views/contribuable/DeclarationsList.vue'
 import DeposerLitige from '@/views/contribuable/LitigeForm.vue'
 import SimulationMontant from '@/views/contribuable/SimulationMontant.vue'
+import LitigesList from '@/views/contribuable/LitigesList.vue'
+
 
 // Vues Agent
 import AgentLogin from '@/views/agent/Login.vue'
@@ -42,6 +44,15 @@ const routes = [
     component: ContribuableDashboard,
     meta: { requiresAuth: true, userType: 'contribuable' }
   },
+
+  {
+  path: '/contribuable/user/:idContribuable',
+  name: 'UserPage',
+  component: () => import('@/views/contribuable/UserPage.vue'),
+  props: route => ({ idContribuable: Number(route.params.idContribuable) }),
+  meta: { requiresAuth: true, userType: 'contribuable' }
+},
+
 
   // Liste des impôts disponibles
   {
@@ -89,7 +100,21 @@ const routes = [
     meta: { requiresAuth: true, userType: 'contribuable' }
   },
 
-  // Déposer un litige
+  // Déposer un litige (nouvelle version)
+// Au lieu de DeposerLitige, on utilise LitigesList
+
+
+{
+  path: '/litige/:idContribuable',
+  name: 'DeposerLitige',
+  component: LitigesList,
+  props: route => ({
+    idContribuable: Number(route.params.idContribuable)
+  }),
+  meta: { requiresAuth: true, userType: 'contribuable' }
+},
+
+ /* // Déposer un litige
   {
     path: '/litige/:idContribuable',
     name: 'DeposerLitige',
@@ -98,7 +123,7 @@ const routes = [
       idContribuable: Number(route.params.idContribuable)
     }),
     meta: { requiresAuth: true, userType: 'contribuable' }
-  },
+  },*/
 
   // Simulation Montant
   {
@@ -154,6 +179,8 @@ router.beforeEach((to, from, next) => {
       return next({ name: 'Home' })
     }
   }
+
+  
 
   // Autoriser l'accès
   next()

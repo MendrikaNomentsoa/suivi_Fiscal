@@ -4,98 +4,123 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Litige;
-use App\Models\Contribuable;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class LitigeController extends Controller
 {
     /**
-     * Lister tous les litiges
-     * GET /api/litiges
+     * Afficher tous les litiges
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        // Récupère tous les litiges avec leur contribuable associé
-        $litiges = Litige::with('contribuable')->get();
-        return response()->json($litiges);
+        try {
+            $litiges = Litige::with('contribuable')
+                ->orderBy('date_ouverture', 'desc')
+                ->get();
+
+            return response()->json($litiges, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors du chargement des litiges',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Créer un nouveau litige
-     * POST /api/litiges
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        // Validation des champs
-        $data = $request->validate([
-            'sujet' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'statut' => 'required|string|max:50',
-            'id_Contribuable' => 'required|exists:contribuables,id_Contribuable',
-        ]);
+        try {
+            $validated = $request->validate([
+                'sujet' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'id_Contribuable' => 'required|exists:contribuables,id_Contribuable',
+                'statut' => 'nullable|in:en_attente,en_cours,resolu,rejete'
+            ]);
 
-        // Ajouter la date automatiquement
-        $data['date_ouverture'] = now();
+            // Valeurs par défaut
+            $validated['statut'] = $validated['statut'] ?? 'en_attente';
+            $validated['date_ouverture'] = now();
 
-        $litige = Litige::create($data);
+            $litige = Litige::create($validated);
 
-        return response()->json($litige, 201);
+            return response()->json($litige, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'Données invalides',
+                'message' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors de la création du litige',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Afficher un litige spécifique
-     * GET /api/litiges/{id}
      */
-    public function show($id_Litige)
+    public function show(string $id): JsonResponse
     {
-        $litige = Litige::with('contribuable')->find($id_Litige);
-
-        if (!$litige) {
-            return response()->json(['message' => 'Litige non trouvé'], 404);
+        try {
+            $litige = Litige::with('contribuable')->findOrFail($id);
+            return response()->json($litige, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Litige non trouvé'
+            ], 404);
         }
-
-        return response()->json($litige);
     }
 
     /**
-     * Modifier un litige
-     * PUT /api/litiges/{id}
+     * Mettre à jour un litige
      */
-    public function update(Request $request, $id_Litige)
+    public function update(Request $request, string $id): JsonResponse
     {
-        $litige = Litige::find($id_Litige);
+        try {
+            $litige = Litige::findOrFail($id);
 
-        if (!$litige) {
-            return response()->json(['message' => 'Litige non trouvé'], 404);
+            $validated = $request->validate([
+                'sujet' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'statut' => 'sometimes|in:en_attente,en_cours,resolu,rejete'
+            ]);
+
+            $litige->update($validated);
+
+            return response()->json($litige, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Litige non trouvé'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors de la mise à jour',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        $data = $request->validate([
-            'sujet' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'date_ouverture' => 'sometimes|date',
-            'statut' => 'sometimes|string|max:50',
-            'id_Contribuable' => 'sometimes|exists:contribuables,id_Contribuable',
-        ]);
-
-        $litige->update($data);
-
-        return response()->json($litige);
     }
 
     /**
      * Supprimer un litige
-     * DELETE /api/litiges/{id}
      */
-    public function destroy($id_Litige)
+    public function destroy(string $id): JsonResponse
     {
-        $litige = Litige::find($id_Litige);
+        try {
+            $litige = Litige::findOrFail($id);
+            $litige->delete();
 
-        if (!$litige) {
-            return response()->json(['message' => 'Litige non trouvé'], 404);
+            return response()->json([
+                'message' => 'Litige supprimé avec succès'
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Litige non trouvé'
+            ], 404);
         }
-
-        $litige->delete();
-
-        return response()->json(['message' => 'Litige supprimé avec succès']);
     }
 }

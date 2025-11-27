@@ -5,10 +5,6 @@ import axios from 'axios'
 import { useAuth } from './composables/useAuth'
 import './assets/tailwind.css'  // <-- import Tailwind ici
 
-
-createApp(App).mount('#app')
-
-
 // Configuration globale d'axios
 axios.defaults.baseURL = 'http://127.0.0.1:8000'
 
@@ -27,12 +23,15 @@ axios.interceptors.response.use(
   }
 )
 
+// Créer l'app Vue
 const app = createApp(App)
 
+// Installer le router
 app.use(router)
 
 // Initialiser l'authentification au démarrage
 const { initAuth } = useAuth()
 initAuth()
 
+// Monter l'app
 app.mount('#app')
