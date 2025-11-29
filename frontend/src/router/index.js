@@ -19,6 +19,18 @@ import LitigesList from '@/views/contribuable/LitigesList.vue'
 import AgentLogin from '@/views/agent/Login.vue'
 import AgentSignup from '@/views/agent/Signup.vue'
 import AgentDashboard from '@/views/agent/Dashboard.vue'
+import GestionPaiementsAgent from '@/views/agent/GestionPaiementsAgent.vue'
+// Import de la vue agent Litiges
+import AgentLitiges from '@/views/agent/LitigesAgent.vue' // ou AgentLitiges.vue selon le nom du fichier
+// Import du composant
+import ContribuablesList from '@/views/agent/ContribuablesList.vue'
+
+
+
+
+
+
+
 
 const routes = [
   {
@@ -137,6 +149,7 @@ const routes = [
   },
 
   // ========== ROUTES AGENT ==========
+  // Routes Agent
   {
     path: '/agent/login',
     name: 'AgentLogin',
@@ -152,8 +165,34 @@ const routes = [
     name: 'AgentDashboard',
     component: AgentDashboard,
     meta: { requiresAuth: true, userType: 'agent' }
-  }
+  },
+  {
+    path: '/agent/paiements',
+    name: 'GestionPaiementsAgent',
+    component: GestionPaiementsAgent,
+    meta: { requiresAuth: true, userType: 'agent' }
+  },
+  // Liste des contribuables (Agent)
+  {
+    path: '/agent/contribuables',
+    name: 'ContribuablesList',
+    component: ContribuablesList,
+    meta: { requiresAuth: true, userType: 'agent' }
+  },
+
+  // ... dans ton tableau routes
+  {
+    path: '/agent/litigesAgent/:idContribuable',
+    name: 'AgentLitiges',
+    component: AgentLitiges,
+    props: route => ({
+      idContribuable: Number(route.params.idContribuable)
+    }),
+    meta: { requiresAuth: true, userType: 'agent' }
+  },
+
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),

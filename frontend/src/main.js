@@ -6,7 +6,7 @@ import { useAuth } from './composables/useAuth'
 import './assets/tailwind.css'  // <-- import Tailwind ici
 
 // Configuration globale d'axios
-axios.defaults.baseURL = 'http://127.0.0.1:8000'
+axios.defaults.baseURL = 'http://127.0.0.1:8000/api'
 
 // Intercepteur pour gérer les erreurs d'authentification
 axios.interceptors.response.use(
@@ -25,6 +25,8 @@ axios.interceptors.response.use(
 
 // Créer l'app Vue
 const app = createApp(App)
+
+app.config.globalProperties.$axios = axios;
 
 // Installer le router
 app.use(router)

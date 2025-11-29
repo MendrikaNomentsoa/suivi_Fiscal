@@ -323,4 +323,25 @@ public function impotsByContribuable($id_contribuable)
             ];
         })->filter(fn($i)=>$i['a_valider'])->values();
     }
+public function payerDeclaration($contribuable, $idDeclaration)
+{
+    // Vérifier que la déclaration existe
+    $decl = Declaration::where('id_contribuable', $contribuable)
+        ->where('id_declaration', $idDeclaration)
+        ->first();
+
+    if (!$decl) {
+        return response()->json(['message' => 'Déclaration introuvable'], 404);
+    }
+
+    // Mettre à jour le statut
+    $decl->statut_paiement = 'paye';
+    $decl->save();
+
+    return response()->json([
+        'message' => 'Paiement confirmé',
+        'declaration' => $decl
+    ], 200);
+}
+
 }

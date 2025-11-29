@@ -9,49 +9,51 @@ use App\Http\Controllers\Api\LitigeController;
 use App\Http\Controllers\Api\TraiterController;
 use App\Http\Controllers\Api\TypeImpotController;
 use App\Http\Controllers\Api\AuthController;
-
+use App\Http\Controllers\Api\NotificationController;
 
 // ---------------------- Contribuables ----------------------
 Route::apiResource('contribuables', ContribuableController::class);
 Route::get('/contribuables/nif/{nif}', [ContribuableController::class, 'showByNif']);
 
-// Retourne tous les impôts avec statut "fait / non fait" pour un contribuable
+// Impôts par contribuable
 Route::get('/contribuables/{id}/impots', [DeclarationController::class, 'impotsByContribuable']);
 Route::get('/impots/{id_contribuable}', [DeclarationController::class, 'impotsByContribuable']);
 
-// ========== ROUTES TYPES D'IMPÔTS ==========
+// ---------------------- Types d'impôts ----------------------
 Route::get('/types-impots', [TypeImpotController::class, 'index']);
 Route::get('/types-impots/{id}', [TypeImpotController::class, 'show']);
 Route::post('/types-impots', [TypeImpotController::class, 'store']);
 Route::put('/types-impots/{id}', [TypeImpotController::class, 'update']);
 Route::delete('/types-impots/{id}', [TypeImpotController::class, 'destroy']);
 
-// ========== ROUTES DÉCLARATIONS ==========
+// ---------------------- Déclarations ----------------------
 Route::get('/declarations', [DeclarationController::class, 'index']);
 Route::post('/declarations', [DeclarationController::class, 'store']);
 Route::get('/declarations/{id}', [DeclarationController::class, 'show']);
 Route::put('/declarations/{id}', [DeclarationController::class, 'update']);
 Route::delete('/declarations/{id}', [DeclarationController::class, 'destroy']);
 
-// Routes spécifiques déclarations
+Route::get('/impots/{id_contribuable}', [DeclarationController::class, 'impotsByContribuable']);
+Route::post('/declarations/{id_contribuable}/payer/{id_declaration}', [DeclarationController::class, 'payerDeclaration']);
+
+
+// Statistiques par contribuable
 Route::get('/declarations/stats/{idContribuable}', [DeclarationController::class, 'statistiques']);
 
-// ========== ROUTES CONTRIBUABLES ==========
-Route::get('/impots/{idContribuable}', [DeclarationController::class, 'impotsByContribuable']);
+// ---------------------- Paiement déclaration ----------------------
+// Cette route corrige ton problème 404 pour le bouton "Payer maintenant"
+Route::post('/declarations/{contribuable}/payer/{id}', [DeclarationController::class, 'payerDeclaration']);
 
 // ---------------------- Échéances ----------------------
-// Routes Échéances
 Route::prefix('echeances')->group(function () {
     Route::get('/', [EcheanceController::class, 'index']);
     Route::get('/{id}', [EcheanceController::class, 'show']);
     Route::put('/{id}', [EcheanceController::class, 'update']);
     Route::delete('/{id}', [EcheanceController::class, 'destroy']);
 
-    // Paiements
     Route::post('/{id}/paiement', [EcheanceController::class, 'enregistrerPaiement']);
     Route::post('/{id}/appliquer-penalites', [EcheanceController::class, 'appliquerPenalites']);
 
-    // Filtres et statistiques
     Route::get('/contribuable/{id_contribuable}', [EcheanceController::class, 'parContribuable']);
     Route::get('/retards/liste', [EcheanceController::class, 'echeancesEnRetard']);
     Route::get('/statistiques/general', [EcheanceController::class, 'statistiques']);
@@ -66,35 +68,24 @@ Route::get('litiges/en-attente', [TraiterController::class, 'index']);
 Route::post('litiges/assigner', [TraiterController::class, 'assignerLitige']);
 Route::delete('litiges/retirer', [TraiterController::class, 'destroy']);
 
-// ---------------------- Types d'impôt ----------------------
-Route::get('/type-impots', [TypeImpotController::class, 'index']);
-
-
-
+// ---------------------- Authentification ----------------------
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);
 
-
-// Routes contribuable
+// Routes spécifiques contribuable (avec middleware)
 Route::middleware(['auth.contribuable'])->group(function () {
     Route::get('/contribuable/dashboard', [ContribuableController::class, 'dashboard']);
     Route::get('/contribuable/declarations', [DeclarationController::class, 'indexContribuable']);
 });
 
-// Routes agent
+// Routes agent (avec middleware)
 Route::middleware(['auth.agent'])->group(function () {
     Route::get('/agent/dashboard', [AgentController::class, 'dashboard']);
     Route::get('/agent/contribuables', [AgentController::class, 'listeContribuables']);
     Route::get('/agent/litiges', [AgentController::class, 'listeLitiges']);
 });
 
-
-
-
-// Auth
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
-
-// Contribuable
+// Routes par rôle
 Route::middleware('checkrole:contribuable')->group(function () {
     Route::get('/contribuable/dashboard', [ContribuableController::class, 'dashboard']);
     Route::get('/contribuable/declarations', [ContribuableController::class, 'declarations']);
@@ -102,18 +93,27 @@ Route::middleware('checkrole:contribuable')->group(function () {
     Route::post('/contribuable/litiges', [ContribuableController::class, 'deposerLitige']);
 });
 
-// Agent
 Route::middleware('checkrole:agent')->group(function () {
     Route::get('/agent/dashboard', [AgentController::class, 'dashboard']);
     Route::get('/agent/contribuables', [AgentController::class, 'listeContribuables']);
     Route::get('/agent/litiges', [AgentController::class, 'listeLitiges']);
 });
 
+// Auth spécifiques
 Route::prefix('auth')->group(function () {
     Route::post('/contribuable/login', [AuthController::class, 'loginContribuable']);
     Route::post('/agent/login', [AuthController::class, 'loginAgent']);
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
-
-
+// routes/api.php
+Route::prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);
+    Route::post('/', [NotificationController::class, 'store']);
+    Route::get('/{id_Notif}', [NotificationController::class, 'show']);
+    Route::put('/{id_Notif}', [NotificationController::class, 'update']);
+    Route::delete('/{id_Notif}', [NotificationController::class, 'destroy']);
+    Route::patch('/{id_Notif}/mark-as-read', [NotificationController::class, 'markAsRead']);
+    Route::get('/contribuable/{id_Contribuable}', [NotificationController::class, 'getByContribuable']);
+    Route::get('/contribuable/{id_Contribuable}/unread-count', [NotificationController::class, 'getUnreadCount']);
+});

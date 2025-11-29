@@ -2,16 +2,26 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 
-// État global partagé
+// ============================================================
+// ✅ Configuration Axios globale
+// ============================================================
+axios.defaults.baseURL = 'http://127.0.0.1:8000/api'
+
+// ============================================================
+// 🔹 État global partagé
+// ============================================================
 const user = ref(null)
 const token = ref(localStorage.getItem('token') || '')
 const userType = ref(localStorage.getItem('userType') || '')
 
-// Configuration axios avec le token
+// Si token existant, ajouter dans Axios
 if (token.value) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
 }
 
+// ============================================================
+// 🔹 Composable useAuth
+// ============================================================
 export function useAuth() {
   const router = useRouter()
 
@@ -25,7 +35,7 @@ export function useAuth() {
   // ============================================================
   const loginContribuable = async (credentials) => {
     try {
-      const response = await axios.post('/api/auth/contribuable/login', {
+      const response = await axios.post('/auth/contribuable/login', {
         email: credentials.email,
         password: credentials.password
       })
@@ -41,15 +51,11 @@ export function useAuth() {
 
       axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
 
-      // 🔥 Redirection vers le dashboard contribuable
-      router.push({
-        name: 'ContribuableDashboard'
-      })
+      router.push({ name: 'ContribuableDashboard' })
 
       return { success: true }
-
     } catch (error) {
-      console.error('Erreur de connexion:', error)
+      console.error('Erreur de connexion contribuable:', error)
       return {
         success: false,
         message: error.response?.data?.message || 'Erreur de connexion'
@@ -58,16 +64,18 @@ export function useAuth() {
   }
 
   // ============================================================
-  // 🟢 Connexion Agent
+  // 🟢 Connexion Agent (corrigé)
   // ============================================================
   const loginAgent = async (credentials) => {
     try {
-      const response = await axios.post('/api/auth/agent/login', {
-        mail: credentials.mail,
+      // ✅ Laravel attend 'email' et non 'mail'
+      const response = await axios.post('/auth/agent/login', {
+        mail: credentials.mail,       // <- corrigé côté backend
         password: credentials.password
       })
 
-      user.value = response.data.user
+      // Stockage des infos
+      user.value = response.data.agent
       token.value = response.data.token
       userType.value = 'agent'
 
@@ -77,17 +85,27 @@ export function useAuth() {
 
       axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
 
-      // 🔥 Dashboard Agent
+      // Redirection vers dashboard agent
       router.push({ name: 'AgentDashboard' })
 
       return { success: true }
+    } catch (err) {
+      console.error("Erreur de connexion agent:", err)
 
-    } catch (error) {
-      console.error('Erreur de connexion:', error)
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Erreur de connexion'
+      // Extraire les messages de validation
+      if (err.response?.status === 422 && err.response.data.errors) {
+        const messages = Object.values(err.response.data.errors)
+                               .flat()
+                               .join(' | ')
+        return { success: false, message: messages }
       }
+
+      // 401 Unauthorized = identifiants incorrects
+      if (err.response?.status === 401) {
+        return { success: false, message: 'Email ou mot de passe incorrect.' }
+      }
+
+      return { success: false, message: err.response?.data?.message || 'Erreur de connexion' }
     }
   }
 
@@ -96,9 +114,9 @@ export function useAuth() {
   // ============================================================
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout')
+      await axios.post('/auth/logout')
     } catch (error) {
-      console.error('Erreur lors de la déconnexion', error)
+      console.error('Erreur lors de la déconnexion:', error)
     } finally {
       user.value = null
       token.value = ''
@@ -143,15 +161,12 @@ export function useAuth() {
   }
 
   return {
-    // État
     user,
     token,
     userType,
     isAuthenticated,
     isContribuable,
     isAgent,
-
-    // Méthodes
     loginContribuable,
     loginAgent,
     logout,

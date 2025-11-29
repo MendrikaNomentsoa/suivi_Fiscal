@@ -187,7 +187,7 @@ export default {
           }
         };
 
-        const response = await axios.post("/api/declarations", payload);
+        const response = await axios.post("/declarations", payload);
 
         this.message = {
           type: 'success',

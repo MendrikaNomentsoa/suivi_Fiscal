@@ -51,7 +51,7 @@
 import axios from 'axios';
 
 // Configuration de l'URL de base de l'API
-const API_BASE_URL = "/api"; // Utilisera le proxy
+const API_BASE_URL = "http://127.0.0.1:8000/api"; // Utilisera le proxy
 // OU si le backend CORS est configuré :
 // const API_BASE_URL = "http://127.0.0.1:8000/api";
 
@@ -116,7 +116,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-/* Styles additionnels si nécessaire */
-</style>

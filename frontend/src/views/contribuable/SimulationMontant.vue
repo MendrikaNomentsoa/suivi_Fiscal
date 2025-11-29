@@ -1,233 +1,128 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4">
-
     <div class="max-w-7xl mx-auto">
-      
+
       <!-- Header -->
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">
-          Simulateur de Paiement d'Impôts
-        </h1>
-        <p class="text-gray-600">
-          Madagascar - Direction Générale des Impôts
-        </p>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Simulateur de Paiement d'Impôts</h1>
+        <p class="text-gray-600">Madagascar - Direction Générale des Impôts</p>
+        <div class="mt-2 text-sm text-gray-500">
+          Contribuable ID: {{ idContribuable }} | Déclarations: {{ declarations.length }}
+          <button @click="loadDeclarations" class="ml-4 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">
+            🔄 Recharger
+          </button>
+        </div>
       </div>
 
       <div class="grid lg:grid-cols-3 gap-6">
-        
-        <!-- ==========================
-             1) HISTORIQUE DES DÉCLARATIONS (À GAUCHE)
-        =========================== -->
+
+        <!-- HISTORIQUE DES DÉCLARATIONS -->
         <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-               Historique
-            </h2>
-            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
-              {{ idTypeImpot }}
-            </span>
-          </div>
+          <h2 class="text-xl font-bold mb-4">Historique des déclarations</h2>
 
           <div v-if="loading" class="text-gray-500 text-center py-8">
             <div class="animate-pulse">Chargement...</div>
           </div>
 
-          <div v-else-if="declarationsFiltrees.length === 0" class="text-center py-8">
+          <div v-else-if="filteredDeclarations.length === 0" class="text-center py-8">
             <div class="text-gray-400 text-4xl mb-2">📄</div>
-            <p class="text-gray-500 text-sm">Aucune déclaration {{ idTypeImpot }}</p>
+            <p class="text-gray-500 text-sm">Aucune déclaration disponible pour {{ idTypeImpot }}</p>
+            <p class="text-xs text-gray-400 mt-2">Total: {{ declarations.length }} déclarations</p>
           </div>
 
           <div v-else class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-            <div 
-              v-for="decl in declarationsFiltrees" 
-              :key="decl.id_declaration" 
+            <div
+              v-for="decl in filteredDeclarations"
+              :key="decl.id_declaration"
               class="p-4 rounded-lg border-2 transition-all hover:shadow-md"
               :class="{
                 'bg-green-50 border-green-200': decl.statut_paiement === 'paye',
                 'bg-orange-50 border-orange-200': decl.statut_paiement === 'non_paye'
               }"
             >
-              <!-- En-tête -->
-              <div class="flex items-start justify-between mb-2">
-                <div class="flex-1">
-                  <p class="font-bold text-gray-900 text-base">
-                    {{ formatMontant(decl.montant) }}
-                  </p>
-                  <p class="text-xs text-gray-500 mt-0.5">
-                    {{ getTypeImpotNom(decl) }}
-                  </p>
+              <div class="flex justify-between items-center mb-2">
+                <div>
+                  <p class="font-bold text-gray-900">{{ formatMontant(decl.montant) }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">{{ decl.type_impot }}</p>
+                  <p class="text-xs text-gray-600 mt-1">Échéance : {{ formatDate(decl.date_limite) }}</p>
                 </div>
-                
-              </div>
 
-              <!-- Détails -->
-              <div class="space-y-1 text-xs text-gray-600 mb-3">
-                <div class="flex items-center gap-2">
-                  <span class="opacity-60">📅</span>
-                  <span>Déclaré le {{ formatDate(decl.date_declaration) }}</span>
-                </div>
-                <div v-if="decl.date_echeance" class="flex items-center gap-2">
-                  <span class="opacity-60">⏰</span>
-                  <span>Échéance : {{ formatDate(decl.date_echeance) }}</span>
+                <div>
+                  <button
+                    v-if="decl.statut_paiement === 'non_paye'"
+                    @click="payerDeclaration(decl.id_declaration)"
+                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition"
+                  >
+                    Payer
+                  </button>
+                  <span v-else class="text-green-600 font-medium text-xs">✔ Payé</span>
                 </div>
               </div>
-
-              <!-- Bouton paiement -->
-              <button
-                v-if="decl.statut_paiement === 'non_paye'"
-                @click="payer(decl.id_declaration)"
-                class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all"
-              >
-                Payer maintenant
-              </button>
-            </div>
-          </div>
-
-          <!-- Stats rapides -->
-          <div v-if="declarationsFiltrees.length > 0" class="mt-4 pt-4 border-t grid grid-cols-2 gap-2">
-            <div class="text-center p-2 bg-gray-50 rounded-lg">
-              <p class="text-xs text-gray-500">Total</p>
-              <p class="font-bold text-gray-900">{{ declarationsFiltrees.length }}</p>
-            </div>
-            <div class="text-center p-2 bg-orange-50 rounded-lg">
-              <p class="text-xs text-orange-600">Non payés</p>
-              <p class="font-bold text-orange-700">{{ declarationsNonPayees }}</p>
             </div>
           </div>
         </div>
 
-        <!-- ==========================
-             2) SIMULATION (AU CENTRE)
-        =========================== -->
+        <!-- SIMULATION -->
         <div class="lg:col-span-2 space-y-6">
-          
-          <!-- Formulaire de simulation -->
           <div class="bg-white rounded-xl shadow-lg p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              Simulation du montant à payer
-            </h2>
-            
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Simulation du montant à payer</h2>
+
             <div class="grid md:grid-cols-2 gap-6">
-              
-              <!-- Colonne gauche : Formulaire -->
+
+              <!-- Formulaire -->
               <div class="space-y-4">
-                
-                <!-- Type d'impôt -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Type d'impôt
-                  </label>
-                  <select 
-                    v-model="idTypeImpot"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Type d'impôt</label>
+                  <select v-model="idTypeImpot" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                     <option value="IRSA">IRSA (mensuel)</option>
                     <option value="IS">IS (annuel)</option>
                   </select>
                 </div>
 
-                <!-- Champs spécifiques IRSA -->
+                <!-- Formulaire IRSA -->
                 <div v-if="idTypeImpot === 'IRSA'" class="space-y-3">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Mois travaillé
-                    </label>
-                    <input 
-                      type="month"
-                      v-model="form.moisTravaille"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <p class="text-xs text-gray-500 mt-1">
-                      📅 Échéance : 15 du mois suivant
-                    </p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mois travaillé</label>
+                    <input type="month" v-model="form.moisTravaille" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" />
                   </div>
-
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Rémunération (Ar)
-                    </label>
-                    <input 
-                      type="number"
-                      v-model.number="form.remuneration"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                      min="0"
-                      step="1000"
-                    />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rémunération (Ar)</label>
+                    <input type="number" v-model.number="form.remuneration" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" />
                   </div>
-
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Avantages en nature (Ar)
-                    </label>
-                    <input 
-                      type="number"
-                      v-model.number="form.avantages"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                      min="0"
-                      step="1000"
-                    />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Avantages (Ar)</label>
+                    <input type="number" v-model.number="form.avantages" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" />
                   </div>
                 </div>
 
-                <!-- Champs spécifiques IS -->
+                <!-- Formulaire IS -->
                 <div v-else class="space-y-3">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Année d'exercice
-                    </label>
-                    <input 
-                      type="number"
-                      v-model.number="form.anneeExercice"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                      min="2000"
-                      max="2100"
-                    />
-                    <p class="text-xs text-gray-500 mt-1">
-                      📅 Échéance : 15 mai {{ form.anneeExercice + 1 }}
-                    </p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Année d'exercice</label>
+                    <input type="number" v-model.number="form.anneeExercice" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"/>
                   </div>
-
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Bénéfice imposable (Ar)
-                    </label>
-                    <input 
-                      type="number"
-                      v-model.number="form.benefice"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                      min="0"
-                      step="10000"
-                    />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bénéfice imposable (Ar)</label>
+                    <input type="number" v-model.number="form.benefice" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"/>
                   </div>
                 </div>
 
-                <!-- Date de paiement -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Date de paiement simulée
-                  </label>
-                  <input 
-                    type="date"
-                    v-model="form.datePaiement"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Date de paiement simulée</label>
+                  <input type="date" v-model="form.datePaiement" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"/>
                 </div>
 
-                <button 
-                  @click="calculer"
-                  class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition-colors"
-                >
+                <button @click="calculer" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition">
                   Calculer
                 </button>
               </div>
 
-              <!-- Colonne droite : Barème -->
+              <!-- Barème -->
               <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-4 border border-indigo-100">
                 <h3 class="font-semibold text-gray-900 mb-3 text-sm">
-                  📊 {{ idTypeImpot === 'IRSA' ? 'Barème progressif IRSA' : 'Barème IS' }}
+                  {{ idTypeImpot === 'IRSA' ? 'Barème IRSA' : 'Barème IS' }}
                 </h3>
                 
-                <!-- Barème IRSA -->
                 <div v-if="idTypeImpot === 'IRSA'">
                   <table class="w-full text-xs">
                     <thead class="bg-white/60">
@@ -237,127 +132,59 @@
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-indigo-100">
-                      <tr class="bg-white/40">
-                        <td class="px-2 py-2">0 - 350 000 Ar</td>
-                        <td class="px-2 py-2 text-right font-medium">0%</td>
-                      </tr>
-                      <tr class="bg-white/40">
-                        <td class="px-2 py-2">350 001 - 400 000 Ar</td>
-                        <td class="px-2 py-2 text-right font-medium">5%</td>
-                      </tr>
-                      <tr class="bg-white/40">
-                        <td class="px-2 py-2">400 001 - 500 000 Ar</td>
-                        <td class="px-2 py-2 text-right font-medium">10%</td>
-                      </tr>
-                      <tr class="bg-white/40">
-                        <td class="px-2 py-2">500 001 - 600 000 Ar</td>
-                        <td class="px-2 py-2 text-right font-medium">15%</td>
-                      </tr>
-                      <tr class="bg-white/40">
-                        <td class="px-2 py-2">&gt; 600 000 Ar</td>
-                        <td class="px-2 py-2 text-right font-medium">20%</td>
-                      </tr>
+                      <tr><td class="px-2 py-2">0 - 350 000 Ar</td><td class="px-2 py-2 text-right">0%</td></tr>
+                      <tr><td class="px-2 py-2">350 001 - 400 000 Ar</td><td class="px-2 py-2 text-right">5%</td></tr>
+                      <tr><td class="px-2 py-2">400 001 - 500 000 Ar</td><td class="px-2 py-2 text-right">10%</td></tr>
+                      <tr><td class="px-2 py-2">500 001 - 600 000 Ar</td><td class="px-2 py-2 text-right">15%</td></tr>
+                      <tr><td class="px-2 py-2">&gt; 600 000 Ar</td><td class="px-2 py-2 text-right">20%</td></tr>
                     </tbody>
                   </table>
                 </div>
-
-                <!-- Barème IS -->
+                
                 <div v-else class="bg-white/60 rounded-lg p-4 text-center">
                   <div class="text-4xl font-bold text-indigo-600 mb-2">20%</div>
                   <p class="text-xs text-gray-600">Taux fixe sur le bénéfice imposable</p>
                 </div>
-
-                <!-- Règles de retard -->
-                <div class="mt-4 pt-4 border-t border-indigo-200">
-                  <h4 class="font-semibold text-xs text-red-600 mb-2">⚠️ En cas de retard</h4>
-                  <ul class="space-y-1 text-xs text-gray-700">
-                    <li>• Pénalité : {{ idTypeImpot === 'IRSA' ? '100 000' : '20 000' }} Ar</li>
-                    <li>• Intérêt : 1% / mois</li>
-                  </ul>
-                </div>
               </div>
 
             </div>
           </div>
 
-          <!-- Résultats -->
-          <div v-if="resultat" class="bg-white rounded-xl shadow-lg p-6 border-2" :class="resultat.enRetard ? 'border-red-300' : 'border-green-300'">
-            <h3 class="font-bold text-gray-900 mb-4 text-lg flex items-center gap-2">
-              {{ resultat.enRetard ? '⚠️' : '✅' }} Résultats de la simulation
+          <!-- Résultat -->
+          <div v-if="resultat" class="bg-white rounded-xl shadow-lg p-6 border-2" 
+               :class="resultat.enRetard ? 'border-red-300' : 'border-green-300'">
+            <h3 class="font-bold text-gray-900 mb-4 text-lg">
+              {{ resultat.enRetard ? '⚠️ Paiement en retard' : '✅ Dans les délais' }}
             </h3>
-            
             <div class="grid md:grid-cols-2 gap-4">
-              
-              <!-- Détails -->
-              <div class="space-y-3">
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span class="text-sm text-gray-600">Date d'échéance</span>
-                  <span class="font-semibold">{{ formatDate(resultat.dateEcheance) }}</span>
-                </div>
-                
-                <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                  <span class="text-sm text-gray-700">Montant de l'impôt</span>
-                  <span class="font-bold text-blue-700">{{ formatMontant(resultat.montantImpot) }}</span>
-                </div>
-
-                <div v-if="resultat.penalite > 0" class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                  <span class="text-sm text-red-700">Pénalité de retard</span>
-                  <span class="font-bold text-red-700">{{ formatMontant(resultat.penalite) }}</span>
-                </div>
-
-                <div v-if="resultat.interet > 0" class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                  <span class="text-sm text-red-700">Intérêt de retard</span>
-                  <span class="font-bold text-red-700">{{ formatMontant(resultat.interet) }}</span>
-                </div>
-              </div>
-
-              <!-- Total -->
-              <div class="flex flex-col justify-center items-center bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-xl p-6">
-                <p class="text-sm opacity-90 mb-2">Total à payer</p>
-                <p class="text-4xl font-bold">{{ formatMontant(resultat.total) }}</p>
-                
-                <div v-if="resultat.enRetard" class="mt-4 px-4 py-2 bg-red-500 rounded-lg text-xs text-center">
-                  🚨 Paiement en retard
-                </div>
-                <div v-else class="mt-4 px-4 py-2 bg-green-500 rounded-lg text-xs text-center">
-                  ✓ Dans les délais
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <!-- Info règles -->
-          <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
-              ℹ️ Règles de paiement
-            </h3>
-            
-            <div class="grid md:grid-cols-2 gap-4 text-sm">
-              <div class="p-4 bg-blue-50 rounded-lg">
-                <h4 class="font-semibold text-blue-900 mb-2">IRSA (mensuel)</h4>
+              <div class="space-y-2">
                 <p class="text-gray-700">
-                  Paiement au plus tard le <strong>15 du mois suivant</strong> le mois travaillé.
+                  <span class="font-medium">Date d'échéance :</span> {{ formatDate(resultat.dateEcheance) }}
                 </p>
-                <p class="text-xs text-gray-500 mt-2">
-                  Ex : juillet → 15 août
+                <p class="text-gray-700">
+                  <span class="font-medium">Montant impôt :</span> {{ formatMontant(resultat.montantImpot) }}
+                </p>
+                <p v-if="resultat.penalite" class="text-red-600">
+                  <span class="font-medium">Pénalité :</span> {{ formatMontant(resultat.penalite) }}
+                </p>
+                <p v-if="resultat.interet" class="text-red-600">
+                  <span class="font-medium">Intérêt de retard :</span> {{ formatMontant(resultat.interet) }}
                 </p>
               </div>
-
-              <div class="p-4 bg-purple-50 rounded-lg">
-                <h4 class="font-semibold text-purple-900 mb-2">IS (annuel)</h4>
-                <p class="text-gray-700">
-                  Paiement au plus tard le <strong>15 mai de l'année suivante</strong>.
-                </p>
-                <p class="text-xs text-gray-500 mt-2">
-                  Ex : 2023 → 15 mai 2024
-                </p>
+              <div class="flex items-center justify-end">
+                <div class="text-right">
+                  <p class="text-sm text-gray-500 mb-1">Total à payer</p>
+                  <p class="text-3xl font-bold" :class="resultat.enRetard ? 'text-red-600' : 'text-green-600'">
+                    {{ formatMontant(resultat.total) }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -366,208 +193,265 @@
 import axios from "axios";
 import dayjs from "dayjs";
 
-export default {
-  props: ["idContribuable"],
+// Configuration Axios
+axios.defaults.baseURL = 'http://localhost:8000/api';
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.headers.common['Accept'] = 'application/json';
 
+export default {
+  name: 'SimulationMontant',
+  
+  props: {
+    idContribuable: {
+      type: [String, Number],
+      default: 1
+    }
+  },
+  
   data() {
     return {
       idTypeImpot: "IRSA",
-
       form: {
-        // Pour IRSA mensuel
         remuneration: 0,
         avantages: 0,
         moisTravaille: dayjs().format("YYYY-MM"),
-        
-        // Pour IS annuel
         benefice: 0,
         anneeExercice: new Date().getFullYear() - 1,
-        
-        // Date de paiement simulée
-        datePaiement: dayjs().format("YYYY-MM-DD"),
+        datePaiement: dayjs().format("YYYY-MM-DD")
       },
-
-      resultat: null,
-
-      loading: false,
       declarations: [],
+      resultat: null,
+      loading: false
     };
   },
-
-  mounted() {
-    if (this.idContribuable) {
-      this.loadDeclarations();
-    }
-  },
-
+  
   computed: {
-    // Filtrer les déclarations par type d'impôt
-    declarationsFiltrees() {
-      return this.declarations.filter(decl => {
-        // Gérer différentes structures de données API
-        let typeDecl = '';
-        
-        if (typeof decl.type_impot === 'string') {
-          typeDecl = decl.type_impot;
-        } else if (decl.type_impot && decl.type_impot.nom) {
-          typeDecl = decl.type_impot.nom;
-        } else if (decl.nom) {
-          typeDecl = decl.nom;
+    filteredDeclarations() {
+      if (!Array.isArray(this.declarations)) {
+        console.warn('⚠️ declarations n\'est pas un tableau');
+        return [];
+      }
+      
+      const filtered = this.declarations.filter(d => {
+        if (!d.type_impot) {
+          console.warn('⚠️ Déclaration sans type_impot:', d);
+          return false;
         }
-        
-        // Vérifier si c'est une chaîne avant d'appeler toUpperCase
-        if (typeof typeDecl === 'string' && typeDecl.length > 0) {
-          return typeDecl.toUpperCase().includes(this.idTypeImpot.toUpperCase());
-        }
-        
-        return false;
+        return d.type_impot === this.idTypeImpot;
       });
-    },
-
-    // Compter les déclarations non payées
-    declarationsNonPayees() {
-      return this.declarationsFiltrees.filter(
-        decl => decl.statut_paiement === 'non_paye'
-      ).length;
+      
+      console.log(`🔍 Filtré ${filtered.length} déclarations pour ${this.idTypeImpot}`);
+      return filtered;
     }
   },
-
+  
+  mounted() {
+    console.log('🚀 Composant monté');
+    console.log('👤 ID Contribuable:', this.idContribuable);
+    console.log('📡 Base URL:', axios.defaults.baseURL);
+    this.loadDeclarations();
+  },
+  
+  watch: {
+    idContribuable(newVal, oldVal) {
+      console.log(`🔄 ID Contribuable changé: ${oldVal} → ${newVal}`);
+      this.loadDeclarations();
+    },
+    
+    idTypeImpot(newVal) {
+      console.log(`🔄 Type d'impôt changé: ${newVal}`);
+    }
+  },
+  
   methods: {
-    // Calcul de la date d'échéance selon le type d'impôt
-    calculerDateEcheance() {
-      if (this.idTypeImpot === 'IRSA') {
-        // 15 jours après le mois travaillé (= 15 du mois suivant)
-        const [annee, mois] = this.form.moisTravaille.split('-');
-        const dateEcheance = dayjs(`${annee}-${mois}-01`).add(1, 'month').date(15);
-        return dateEcheance.format("YYYY-MM-DD");
-      } else if (this.idTypeImpot === 'IS') {
-        // 15 mai de l'année suivante
-        const anneeEcheance = this.form.anneeExercice + 1;
-        return `${anneeEcheance}-05-15`;
+    async loadDeclarations() {
+      const contributorId = this.idContribuable || 1;
+      this.loading = true;
+      
+      try {
+        console.log(`🔍 Chargement des déclarations pour le contribuable ${contributorId}...`);
+        
+        const res = await axios.get(`/impots/${contributorId}`);
+        
+        console.log("📦 Réponse API complète:", res);
+        console.log("📦 Données reçues:", res.data);
+        
+        // Extraire les données selon la structure
+        let rawData = [];
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          rawData = res.data.data;
+          console.log("✅ Structure: {success, data}");
+        } else if (Array.isArray(res.data)) {
+          rawData = res.data;
+          console.log("✅ Structure: tableau direct");
+        } else {
+          console.warn("⚠️ Structure API non reconnue:", res.data);
+          this.declarations = [];
+          return;
+        }
+        
+        console.log(`📋 ${rawData.length} déclaration(s) brute(s) reçue(s)`);
+        
+        // Normaliser chaque déclaration
+        this.declarations = rawData.map((decl, index) => {
+          console.log(`🔍 Traitement déclaration ${index + 1}:`, decl);
+          
+          // Extraire le code du type d'impôt
+          let typeImpotCode = 'INCONNU';
+          
+          if (decl.typeImpot && typeof decl.typeImpot === 'object') {
+            // Relation Laravel chargée
+            typeImpotCode = decl.typeImpot.code || decl.typeImpot.nom || 'INCONNU';
+            console.log(`  → Type d'impôt (relation): ${typeImpotCode}`);
+          } else if (typeof decl.type_impot === 'string') {
+            // Déjà une chaîne
+            typeImpotCode = decl.type_impot;
+            console.log(`  → Type d'impôt (string): ${typeImpotCode}`);
+          } else if (decl.id_type_impot) {
+            // Fallback sur l'ID
+            typeImpotCode = decl.id_type_impot === 1 ? 'IRSA' : 'IS';
+            console.log(`  → Type d'impôt (ID): ${typeImpotCode}`);
+          }
+          
+          const normalized = {
+            id_declaration: decl.id_declaration,
+            type_impot: typeImpotCode.toUpperCase(),
+            montant: parseFloat(decl.montant) || 0,
+            date_limite: decl.echeance?.date_limite || decl.date_declaration,
+            statut_paiement: decl.statut_paiement || 'non_paye'
+          };
+          
+          console.log(`  ✅ Normalisée:`, normalized);
+          return normalized;
+        });
+        
+        console.log(`✅ ${this.declarations.length} déclaration(s) normalisée(s)`);
+        console.log("📋 Déclarations finales:", this.declarations);
+        
+      } catch (err) {
+        console.error("❌ Erreur lors du chargement:", err);
+        console.error("❌ Détails:", err.response?.data || err.message);
+        console.error("❌ Status:", err.response?.status);
+        
+        this.declarations = [];
+        
+        // Afficher un message d'erreur à l'utilisateur
+        if (err.response?.status === 404) {
+          console.warn("⚠️ Contribuable non trouvé");
+        } else if (err.response?.status === 500) {
+          console.error("💥 Erreur serveur");
+        }
+        
+      } finally {
+        this.loading = false;
       }
-      return null;
+    },
+    
+    async payerDeclaration(idDeclaration) {
+      if (!confirm('Confirmer le paiement de cette déclaration ?')) {
+        return;
+      }
+      
+      try {
+        console.log(`💰 Paiement de la déclaration ${idDeclaration}...`);
+        
+        const res = await axios.post(
+          `/declarations/${this.idContribuable}/payer/${idDeclaration}`
+        );
+        
+        console.log("✅ Paiement réussi:", res.data);
+        alert("✅ Paiement effectué avec succès !");
+        
+        // Recharger les déclarations
+        await this.loadDeclarations();
+        
+      } catch (err) {
+        console.error("❌ Erreur paiement:", err);
+        alert("❌ Erreur : " + (err.response?.data?.message || err.message));
+      }
     },
 
-    // Calcul du montant de l'impôt
+    calculerDateEcheance() {
+      if (this.idTypeImpot === "IRSA") {
+        const [y, m] = this.form.moisTravaille.split("-");
+        return dayjs(`${y}-${m}-01`).add(1, "month").date(15).format("YYYY-MM-DD");
+      }
+      return `${this.form.anneeExercice + 1}-05-15`;
+    },
+    
     calculerMontantImpot() {
-      if (this.idTypeImpot === 'IRSA') {
-        const totalRevenu = this.form.remuneration + this.form.avantages;
-        let irsa = 0;
-
-        if (totalRevenu > 600000) {
-          irsa = 27500 + (totalRevenu - 600000) * 0.2;
-        } else if (totalRevenu > 500000) {
-          irsa = 12500 + (totalRevenu - 500000) * 0.15;
-        } else if (totalRevenu > 400000) {
-          irsa = 2500 + (totalRevenu - 400000) * 0.1;
-        } else if (totalRevenu > 350000) {
-          irsa = (totalRevenu - 350000) * 0.05;
+      if (this.idTypeImpot === "IRSA") {
+        const total = this.form.remuneration + this.form.avantages;
+        let imp = 0;
+        
+        if (total > 600000) {
+          imp = 27500 + (total - 600000) * 0.2;
+        } else if (total > 500000) {
+          imp = 12500 + (total - 500000) * 0.15;
+        } else if (total > 400000) {
+          imp = 2500 + (total - 400000) * 0.1;
+        } else if (total > 350000) {
+          imp = (total - 350000) * 0.05;
         }
-
-        return Math.round(irsa);
-      } else if (this.idTypeImpot === 'IS') {
-        // IS : 20% du bénéfice
+        
+        return Math.round(imp);
+      } else {
+        // IS
         return Math.round(this.form.benefice * 0.2);
       }
-      return 0;
     },
-
-    // Calcul des pénalités et intérêts
-    calculerPenalites(montantImpot, dateEcheance, datePaiement) {
-      const echeance = dayjs(dateEcheance);
-      const paiement = dayjs(datePaiement);
-      
+    
+    calculerPenalites(montant, echeance, paiement) {
+      const diff = dayjs(paiement).diff(dayjs(echeance), 'day');
       let penalite = 0;
       let interet = 0;
-
-      // Si le paiement est après l'échéance (même 1 jour)
-      if (paiement.isAfter(echeance)) {
-        // Pénalité de retard
-        if (this.idTypeImpot === 'IRSA') {
-          penalite = 100000;
-        } else if (this.idTypeImpot === 'IS') {
-          penalite = 20000;
-        }
-
-        // Intérêt de retard : 1% par mois
-        const diffJours = paiement.diff(echeance, 'day');
-        const moisRetard = Math.ceil(diffJours / 30);
+      
+      if (diff > 0) {
+        // En retard
+        penalite = this.idTypeImpot === "IRSA" ? 100000 : 20000;
         
-        interet = Math.round(montantImpot * 0.01 * moisRetard);
+        // Intérêt de 1% par mois de retard
+        const moisRetard = Math.ceil(diff / 30);
+        interet = Math.round(montant * 0.01 * moisRetard);
       }
-
+      
       return { penalite, interet };
     },
-
+    
     calculer() {
       const dateEcheance = this.calculerDateEcheance();
       const montantImpot = this.calculerMontantImpot();
       const { penalite, interet } = this.calculerPenalites(
-        montantImpot, 
-        dateEcheance, 
+        montantImpot,
+        dateEcheance,
         this.form.datePaiement
       );
-      const total = montantImpot + penalite + interet;
-
+      
       this.resultat = {
         montantImpot,
         dateEcheance,
         penalite,
         interet,
-        total,
+        total: montantImpot + penalite + interet,
         enRetard: penalite > 0 || interet > 0
       };
+      
+      console.log("📊 Résultat du calcul:", this.resultat);
     },
-
+    
     formatDate(date) {
+      if (!date) return 'N/A';
       return dayjs(date).format("DD/MM/YYYY");
     },
-
+    
     formatMontant(montant) {
+      if (montant === null || montant === undefined) return '0 Ar';
       return new Intl.NumberFormat('fr-MG').format(montant) + ' Ar';
-    },
-
-    getTypeImpotNom(decl) {
-      if (typeof decl.type_impot === 'string') {
-        return decl.type_impot;
-      } else if (decl.type_impot && decl.type_impot.nom) {
-        return decl.type_impot.nom;
-      } else if (decl.nom) {
-        return decl.nom;
-      }
-      return 'Impôt';
-    },
-
-    async loadDeclarations() {
-      if (!this.idContribuable) return;
-      
-      this.loading = true;
-      try {
-        const res = await axios.get(`/api/impots/${this.idContribuable}`);
-        
-        if (Array.isArray(res.data)) {
-          this.declarations = res.data;
-        } else if (res.data.data) {
-          this.declarations = res.data.data;
-        } else if (res.data.declarations) {
-          this.declarations = res.data.declarations;
-        }
-      } catch (e) {
-        console.error("Erreur chargement déclarations :", e);
-        this.declarations = [];
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async payer(idDeclaration) {
-      try {
-        await axios.post(`/api/declarations/${this.idContribuable}/payer/${idDeclaration}`);
-        this.loadDeclarations();
-      } catch (e) {
-        console.error("Erreur paiement :", e);
-      }
-    },
-  },
+    }
+  }
 };
 </script>
+
+<style scoped>
+/* Styles personnalisés si nécessaire */
+</style>

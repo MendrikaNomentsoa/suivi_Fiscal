@@ -10,20 +10,25 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::table('declarations', function (Blueprint $table) {
-        $table->enum('statut_paiement', ['paye', 'non_paye'])->default('non_paye')->after('statut');
-    });
-}
-
+    {
+        if (!Schema::hasColumn('declarations', 'statut_paiement')) {
+            Schema::table('declarations', function (Blueprint $table) {
+                $table->enum('statut_paiement', ['paye', 'non_paye'])
+                      ->default('non_paye')
+                      ->after('statut');
+            });
+        }
+    }
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::table('declarations', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('declarations', 'statut_paiement')) {
+            Schema::table('declarations', function (Blueprint $table) {
+                $table->dropColumn('statut_paiement');
+            });
+        }
     }
 };

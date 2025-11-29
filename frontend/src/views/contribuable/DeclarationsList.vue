@@ -49,7 +49,7 @@
       <div v-else>
 
         <!-- STATS CARDS -->
-        <div v-if="declarations.length" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div v-if="declarations.length" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div class="p-5 bg-white rounded-lg shadow-sm text-center">
             <p class="text-sm text-gray-500">Validées</p>
             <p class="text-3xl font-bold text-green-600 mt-1">{{ getStatutCount('validee') }}</p>
@@ -61,6 +61,10 @@
           <div class="p-5 bg-white rounded-lg shadow-sm text-center">
             <p class="text-sm text-gray-500">En attente</p>
             <p class="text-3xl font-bold text-yellow-600 mt-1">{{ getStatutCount('en_attente') }}</p>
+          </div>
+          <div class="p-5 bg-white rounded-lg shadow-sm text-center">
+            <p class="text-sm text-gray-500">Payées</p>
+            <p class="text-3xl font-bold text-emerald-600 mt-1">{{ getPaiementCount('paye') }}</p>
           </div>
         </div>
 
@@ -88,7 +92,7 @@
                     <th class="px-6 py-3">Date</th>
                     <th class="px-6 py-3">Statut</th>
                     <th class="px-6 py-3">Paiement</th>
-                    <th class="px-6 py-3 text-center">Action</th>
+                    <th class="px-6 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -102,15 +106,25 @@
                       </span>
                     </td>
                     <td class="px-6 py-4">
-                      <span v-if="dec.statut === 'validee'" 
+                      <span v-if="dec.statut === 'validee' || dec.statut === 'valide'"
                             :class="['px-3 py-1 rounded-full text-xs font-semibold border inline-flex items-center gap-1', getPaiementStyle(dec)]">
                         {{ getPaiementLabel(dec) }}
                       </span>
+                      <span v-else class="text-gray-400 text-xs">-</span>
                     </td>
                     <td class="px-6 py-4 text-center">
-                      <button @click="voirDetails(dec)" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition">
-                        Détails
-                      </button>
+                      <div class="flex gap-2 justify-center">
+                        <button @click="voirDetails(dec)" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition">
+                          Détails
+                        </button>
+                        <button 
+                          v-if="(dec.statut === 'validee' || dec.statut === 'valide') && dec.statut_paiement === 'non_paye'"
+                          @click="payerDeclaration(dec)"
+                          class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition"
+                        >
+                          💰 Payer
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -170,11 +184,21 @@
                 {{ getStatutLabel(selectedDeclaration.statut) }}
               </span>
             </div>
-            <div v-if="selectedDeclaration.statut === 'validee'" class="p-4 bg-gray-50 rounded-lg border">
-              <p class="text-xs text-gray-500 uppercase">Paiement</p>
-              <span :class="['px-3 py-1 text-sm rounded-full border font-semibold inline-flex items-center gap-1', getPaiementStyle(selectedDeclaration)]">
-                {{ getPaiementLabel(selectedDeclaration) }}
-              </span>
+            <div v-if="selectedDeclaration.statut === 'validee' || selectedDeclaration.statut === 'valide'" 
+                 class="p-4 bg-gray-50 rounded-lg border md:col-span-2">
+              <p class="text-xs text-gray-500 uppercase mb-2">Statut de paiement</p>
+              <div class="flex items-center justify-between">
+                <span :class="['px-3 py-1 text-sm rounded-full border font-semibold inline-flex items-center gap-1', getPaiementStyle(selectedDeclaration)]">
+                  {{ getPaiementLabel(selectedDeclaration) }}
+                </span>
+                <button 
+                  v-if="selectedDeclaration.statut_paiement === 'non_paye'"
+                  @click="payerDeclaration(selectedDeclaration)"
+                  class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition font-semibold"
+                >
+                  💰 Payer maintenant
+                </button>
+              </div>
             </div>
           </div>
 
@@ -205,6 +229,9 @@
 <script>
 import axios from "axios";
 
+// Configuration Axios
+axios.defaults.baseURL = 'http://127.0.0.1:8000/api';
+
 export default {
   name: 'DeclarationsExistantes',
   props: {
@@ -227,10 +254,10 @@ export default {
     async loadData() {
       this.loading = true;
       try {
-        const [declarationsRes, typeRes] = await Promise.all([
-          axios.get("http://127.0.0.1:8000/api/declarations"),
-          axios.get(`http://127.0.0.1:8000/api/types-impots/${this.idTypeImpot}`)
-        ]);
+       const [declarationsRes, typeRes] = await Promise.all([
+  axios.get("declarations"),
+  axios.get(`types-impots/${this.idTypeImpot}`)
+]);
 
         this.declarations = declarationsRes.data
           .filter(d => 
@@ -240,11 +267,49 @@ export default {
           .sort((a, b) => new Date(b.date_declaration) - new Date(a.date_declaration));
 
         this.typeImpot = typeRes.data;
+        
+        console.log('✅ Déclarations chargées:', this.declarations);
       } catch (err) {
-        console.error('Erreur de chargement:', err);
+        console.error('❌ Erreur de chargement:', err);
         alert('Erreur lors du chargement des déclarations');
       } finally {
         this.loading = false;
+      }
+    },
+
+    async payerDeclaration(declaration) {
+      if (!confirm(`Confirmer le paiement de ${this.formatMontant(declaration.montant)} ?`)) {
+        return;
+      }
+
+      try {
+        console.log(`💰 Paiement de la déclaration ${declaration.id_declaration}...`);
+        
+        const res = await axios.post(
+          `/declarations/${this.idContribuable}/payer/${declaration.id_declaration}`
+        );
+        
+        console.log('✅ Paiement réussi:', res.data);
+        
+        // Mettre à jour localement
+        const index = this.declarations.findIndex(d => d.id_declaration === declaration.id_declaration);
+        if (index !== -1) {
+          this.declarations[index].statut_paiement = 'paye';
+        }
+        
+        // Mettre à jour la déclaration sélectionnée si la modale est ouverte
+        if (this.selectedDeclaration && this.selectedDeclaration.id_declaration === declaration.id_declaration) {
+          this.selectedDeclaration.statut_paiement = 'paye';
+        }
+        
+        alert('✅ Paiement effectué avec succès !');
+        
+        // Recharger les données pour être sûr
+        await this.loadData();
+        
+      } catch (err) {
+        console.error('❌ Erreur paiement:', err);
+        alert('❌ Erreur : ' + (err.response?.data?.message || err.message));
       }
     },
 
@@ -260,6 +325,10 @@ export default {
 
     getStatutCount(statut) {
       return this.declarations.filter(d => d.statut === statut).length;
+    },
+
+    getPaiementCount(statutPaiement) {
+      return this.declarations.filter(d => d.statut_paiement === statutPaiement).length;
     },
 
     getStatutLabel(statut) {
@@ -282,28 +351,29 @@ export default {
 
     getStatutStyle(statut) {
       const styles = {
-        'validee': 'bg-green-100 text-green-700 border border-green-200',
-        'valide': 'bg-blue-100 text-blue-700 border border-blue-200',
-        'en_attente': 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+        'validee': 'bg-green-100 text-green-700 border-green-300',
+        'valide': 'bg-blue-100 text-blue-700 border-blue-300',
+        'en_attente': 'bg-yellow-100 text-yellow-700 border-yellow-300'
       };
-      return styles[statut] || 'bg-gray-100 text-gray-700 border border-gray-200';
+      return styles[statut] || 'bg-gray-100 text-gray-700 border-gray-300';
     },
 
-    // Paiement
     getPaiementLabel(declaration) {
-      if (declaration.statut === 'validee') {
-        return declaration.paye ? 'Payé ✅' : 'Non payé ❌';
+      if (declaration.statut_paiement === 'paye') {
+        return '✅ Payé';
+      } else if (declaration.statut_paiement === 'non_paye') {
+        return '❌ Non payé';
       }
-      return '';
+      return '⏳ En attente';
     },
 
     getPaiementStyle(declaration) {
-      if (declaration.statut === 'validee') {
-        return declaration.paye 
-          ? 'bg-green-100 text-green-700 border border-green-200'
-          : 'bg-red-100 text-red-700 border border-red-200';
+      if (declaration.statut_paiement === 'paye') {
+        return 'bg-emerald-100 text-emerald-700 border-emerald-300';
+      } else if (declaration.statut_paiement === 'non_paye') {
+        return 'bg-red-100 text-red-700 border-red-300';
       }
-      return '';
+      return 'bg-gray-100 text-gray-700 border-gray-300';
     },
 
     formatMontant(montant) {

@@ -150,6 +150,7 @@
                     Simuler
                   </button>
 
+
                 </div>
               </div>
 
@@ -282,6 +283,15 @@ export default {
         return false;
       });
     },
+
+    simuler(idDeclaration) {
+  // Redirection vers SimulationMontant.vue
+  this.$router.push({
+    name: 'SimulationMontant',
+    params: { idDeclaration }
+  });
+},
+
 
     getDeclarationsCount(idTypeImpot) {
       return this.getDeclarationsByType(idTypeImpot).length;

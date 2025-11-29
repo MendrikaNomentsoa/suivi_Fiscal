@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -13,8 +12,9 @@ class NotificationController extends Controller
      */
     public function index()
     {
-        $notifications = Notification::with('contribuable', 'agent')->get();
-
+        $notifications = Notification::with('contribuable', 'agent')
+            ->orderBy('date_envoi', 'desc')
+            ->get();
         return response()->json($notifications);
     }
 
@@ -24,14 +24,20 @@ class NotificationController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'design' => 'nullable|string|',
+            'design' => 'nullable|string',
             'date_envoi' => 'required|date',
-            'date_lecture' => 'required|date',
+            'date_lecture' => 'nullable|date',
             'statut' => 'required|string|max:50',
             'id_Contribuable' => 'required|exists:contribuables,id_Contribuable',
-            'id_Agent' => 'required|exists:agents,id_Agent',
-
+            'id_Agent' => 'nullable|exists:agents,id_Agent',
         ]);
+
+        $notification = Notification::create($data);
+
+        return response()->json([
+            'message' => 'Notification créée avec succès',
+            'notification' => $notification
+        ], 201);
     }
 
     /**
@@ -39,10 +45,10 @@ class NotificationController extends Controller
      */
     public function show(string $id_Notif)
     {
-        $notification = Notification::with('contribuable')->find($id_Notif);
+        $notification = Notification::with('contribuable', 'agent')->find($id_Notif);
 
         if (!$notification) {
-            return response()->json(['message' => 'notifi$notification non trouvé'], 404);
+            return response()->json(['message' => 'Notification non trouvée'], 404);
         }
 
         return response()->json($notification);
@@ -53,7 +59,74 @@ class NotificationController extends Controller
      */
     public function update(Request $request, string $id_Notif)
     {
-        //
+        $notification = Notification::find($id_Notif);
+
+        if (!$notification) {
+            return response()->json(['message' => 'Notification non trouvée'], 404);
+        }
+
+        $data = $request->validate([
+            'design' => 'nullable|string',
+            'date_envoi' => 'sometimes|date',
+            'date_lecture' => 'nullable|date',
+            'statut' => 'sometimes|string|max:50',
+            'id_Contribuable' => 'sometimes|exists:contribuables,id_Contribuable',
+            'id_Agent' => 'nullable|exists:agents,id_Agent',
+        ]);
+
+        $notification->update($data);
+
+        return response()->json([
+            'message' => 'Notification mise à jour avec succès',
+            'notification' => $notification
+        ]);
+    }
+
+    /**
+     * Mark notification as read
+     */
+    public function markAsRead(string $id_Notif)
+    {
+        $notification = Notification::find($id_Notif);
+
+        if (!$notification) {
+            return response()->json(['message' => 'Notification non trouvée'], 404);
+        }
+
+        $notification->update([
+            'date_lecture' => now(),
+            'statut' => 'lu'
+        ]);
+
+        return response()->json([
+            'message' => 'Notification marquée comme lue',
+            'notification' => $notification
+        ]);
+    }
+
+    /**
+     * Get notifications for a specific contribuable
+     */
+    public function getByContribuable(string $id_Contribuable)
+    {
+        $notifications = Notification::with('agent')
+            ->where('id_Contribuable', $id_Contribuable)
+            ->orderBy('date_envoi', 'desc')
+            ->get();
+
+        return response()->json($notifications);
+    }
+
+    /**
+     * Get unread notifications count for a contribuable
+     */
+    public function getUnreadCount(string $id_Contribuable)
+    {
+        $count = Notification::where('id_Contribuable', $id_Contribuable)
+            ->where('statut', 'non lu')
+            ->count();
+
+        return response()->json(['unread_count' => $count]);
     }
 
     /**
@@ -64,11 +137,11 @@ class NotificationController extends Controller
         $notification = Notification::find($id_Notif);
 
         if (!$notification) {
-            return response()->json(['message' => '$notification non trouvé'], 404);
+            return response()->json(['message' => 'Notification non trouvée'], 404);
         }
 
         $notification->delete();
 
-        return response()->json(['message' => '$notification supprimé avec succès']);
+        return response()->json(['message' => 'Notification supprimée avec succès']);
     }
 }
